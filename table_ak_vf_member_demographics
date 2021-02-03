@@ -1,0 +1,254 @@
+DROP TABLE IF EXISTS coc_reporting.ak_vf_member_demographics;
+CREATE TABLE coc_reporting.ak_vf_member_demographics AS
+
+
+WITH ak_base AS (
+SELECT
+	core_user.id AS ak_userid -- to match with tmc_activist_pool
+  , subscription_status -- include to filter by 'subscribed', 'unsubscribed', 'bounced' and 'never'.
+-- Including location info, since AK has most complete location info (compared to voterfile).
+  , city AS ak_city
+  , state AS ak_state
+  , zip AS ak_zip
+  , COUNT(core_action.id) AS count_actions -- Count the number of actions a user has taken.
+  , CASE WHEN count_actions IS NOT NULL THEN 1 ELSE NULL -- Creating to be able to filter by action takers and non-action takers.
+  		END AS action_taker_flag
+FROM coc_ak.core_user
+LEFT JOIN coc_ak.core_action
+	ON core_user.id = core_action.user_id
+
+WHERE core_action.status = 'complete'
+
+GROUP BY 1,2,3,4,5 -- Group by core_user.id first. The rest don't matter.
+)
+
+-- Joining AK users to voterbase_id through TMC activist pool
+, ak_tmc_join AS (
+SELECT
+	ak_base.*
+  	--, coc_person_fields.first_name AS tmc_first_name
+    --, coc_person_fields.last_name AS tmc_last_name
+  	, coc_person_fields.person_id AS tmc_person_id
+  	, coc_identities.voterbase_id AS tmc_voterbase_id
+  	, CASE WHEN coc_person_fields.person_id IS NOT NULL THEN (ROW_NUMBER () OVER (PARTITION BY coc_person_fields.person_id ORDER BY NVL(coc_identities.updated_at, NULL) DESC NULLS LAST))
+  				ELSE 1
+  			END AS person_id_rn -- Adding field to dedup by person_id. By formatting this as a CASE WHEN, a value of "1" is assigned for rows without a person_id (appears to be people who are "unsubscribed" or "bounced" in AK). This way I am not collapsing all of these people into one record.
+  	, CASE WHEN 
+FROM ak_base
+
+-- Left Join, since want to include all people from Action Kit. And only records from Activist Pool if they match.
+LEFT JOIN tmc_activist_pool.coc_person_fields
+	ON coc_person_fields.primary_key = ak_base.ak_userid
+    AND coc_person_fields.vendor = 'action_kit'
+LEFT JOIN tmc_activist_pool.coc_identities
+  	ON coc_person_fields.person_id = coc_identities.person_id
+)
+
+, person_id_dedup AS (
+SELECT *
+FROM ak_tmc_join
+WHERE person_id_rn = 1
+)
+  
+  
+-- Joining to voterfile
+SELECT
+	ak_tmc_join.*
+  --, ntl_current.vb_voterbase_id . Used field to check join, but now duplicate not needed
+
+-- Demographic fields from the voterfile:
+---- All current fields have been checked for 80% coverage (of users that match) 
+  , ntl_current.vb_voterbase_deceased_flag AS deceased_flag -- Something I could filter, if desired
+  , ntl_current.vb_voterbase_age AS age
+	, ntl_current.vb_voterbase_gender AS gender
+	, CASE WHEN ntl_current.vb_voterbase_race = 'Uncoded' THEN 'Unknown'
+  		ELSE ntl_current.vb_voterbase_race
+  	END AS race
+  		-- ^Renaming to be more clear and less technial.
+	, ntl_current.vb_voterbase_marital_status AS marital_status
+  , CASE
+      	WHEN ntl_current.vb_family_composition_code = 'A' THEN 'Single'
+      	WHEN ntl_current.vb_family_composition_code = 'B' THEN 'Single with children'
+      	WHEN ntl_current.vb_family_composition_code = 'C' THEN 'Couple'
+      	WHEN ntl_current.vb_family_composition_code = 'D' THEN 'Couple with children'
+      	WHEN ntl_current.vb_family_composition_code = 'E' THEN 'Multiple generations'
+       	WHEN ntl_current.vb_family_composition_code = 'F' THEN 'More than 3 surnames'
+        WHEN ntl_current.vb_family_composition_code = 'G' THEN 'Other'
+       	ELSE ntl_current.vb_family_composition_code 
+    	END AS family_composition
+  , ntl_current.vb_number_of_children_in_household AS number_children
+  , CASE
+      	WHEN ntl_current.vb_homeowner_indicator = 'Y' THEN 'Yes'
+      	WHEN ntl_current.vb_homeowner_indicator = 'N' THEN 'No'
+      	WHEN ntl_current.vb_homeowner_indicator = 'U' THEN 'Unknown'
+       	ELSE ntl_current.vb_homeowner_indicator 
+    	END AS homeowner_indicator
+  , CASE
+  			WHEN ntl_current.vb_household_income_amount < 25 THEN '< $25,000'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 25 AND ntl_current.vb_household_income_amount < 50 THEN '$25,000 - $49,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 50 AND ntl_current.vb_household_income_amount < 75 THEN '$50,000 - $74,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 75 AND ntl_current.vb_household_income_amount < 100 THEN '$75,000 - $99,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 100 AND ntl_current.vb_household_income_amount < 150 THEN '$100,000 - $149,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 150 AND ntl_current.vb_household_income_amount < 200 THEN
+'$150,000 - $199,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 150 AND ntl_current.vb_household_income_amount < 200 THEN '$150,000 - $199,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 200 AND ntl_current.vb_household_income_amount < 250 THEN '$200,000 - $249,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 250 AND ntl_current.vb_household_income_amount < 500 THEN '$250,000 - $499,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 500 AND ntl_current.vb_household_income_amount < 750 THEN '$500,000 - $749,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 750 AND ntl_current.vb_household_income_amount < 1000 THEN '$750,000 - $999,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 1000 AND ntl_current.vb_household_income_amount < 2500 THEN '$1,000,000 - $2,499,999'::varchar
+  			WHEN ntl_current.vb_household_income_amount >= 2500 THEN '> $2,500,000'::varchar
+  			ELSE ntl_current.vb_household_income_amount::varchar
+  	END AS household_income_buckets
+  , CASE
+      	WHEN ntl_current.vb_household_net_worth = 'A' THEN '< $25,000'
+      	WHEN ntl_current.vb_household_net_worth = 'B' THEN '$25,000 - $49,999'
+      	WHEN ntl_current.vb_household_net_worth = 'C' THEN '$50,000 - $74,999'
+      	WHEN ntl_current.vb_household_net_worth = 'D' THEN '$75,000 - $99,999'
+      	WHEN ntl_current.vb_household_net_worth = 'E' THEN '$100,000 - $149,999'
+       	WHEN ntl_current.vb_household_net_worth = 'F' THEN '$150,000 - $199,999'
+        WHEN ntl_current.vb_household_net_worth = 'G' THEN '$200,000 - $249,999'
+       	WHEN ntl_current.vb_household_net_worth = 'H' THEN '$250,000 - $499,999'
+        WHEN ntl_current.vb_household_net_worth = 'I' THEN '$500,000 - $749,999'
+        WHEN ntl_current.vb_household_net_worth = 'J' THEN '$750,000 - $999,999'
+        WHEN ntl_current.vb_household_net_worth = 'K' THEN '$1,000,000 - $2,499,999'
+        WHEN ntl_current.vb_household_net_worth = 'L' THEN '$2,500,000 - $4,999,999'
+        WHEN ntl_current.vb_household_net_worth = 'M' THEN '$5,000,000 - $9,999,999'
+        WHEN ntl_current.vb_household_net_worth = 'N' THEN '> $10,000,000'
+       	ELSE ntl_current.vb_household_net_worth
+    	END AS household_net_worth
+  , CASE
+      	WHEN ntl_current.vb_education = '0' THEN 'Unknown'::varchar
+      	WHEN ntl_current.vb_education = '1' THEN 'High School'::varchar
+      	WHEN ntl_current.vb_education = '2' THEN 'Some College'::varchar
+      	WHEN ntl_current.vb_education = '3' THEN 'College Graduate'::varchar
+      	WHEN ntl_current.vb_education = '4' THEN 'Post Graduate'::varchar
+        WHEN ntl_current.vb_education = '6' THEN 'Less than High School Diploma'::varchar
+       	ELSE ntl_current.vb_education::varchar
+    	END AS highest_education
+  , CASE
+      	WHEN ntl_current.ts_tsmart_urbanicity = 'R1' THEN '1 Rural (least dense)'
+      	WHEN ntl_current.ts_tsmart_urbanicity = 'R2' THEN '2 Rural'
+      	WHEN ntl_current.ts_tsmart_urbanicity = 'S3' THEN '3 Suburban'
+      	WHEN ntl_current.ts_tsmart_urbanicity = 'S4' THEN '4 Suburban'
+      	WHEN ntl_current.ts_tsmart_urbanicity = 'U5' THEN '5 Urban'
+        WHEN ntl_current.ts_tsmart_urbanicity = 'U6' THEN '6 Urban (most dense)'
+       	ELSE ntl_current.ts_tsmart_urbanicity
+    	END AS urbanicity
+    , CASE
+    	WHEN ts_tsmart_catholic_raw_score >= ts_tsmart_evangelical_raw_score 
+        	AND ts_tsmart_catholic_raw_score >= ts_tsmart_otherchristian_raw_score
+          AND ts_tsmart_catholic_raw_score >= ts_tsmart_jewish_raw_score
+          AND ts_tsmart_catholic_raw_score >= ts_tsmart_mormon_raw_score
+          AND ts_tsmart_catholic_raw_score >= ts_tsmart_non_religious_raw_score
+          THEN 'Catholic'
+          ELSE CASE
+       WHEN ts_tsmart_evangelical_raw_score >= ts_tsmart_catholic_raw_score
+       		AND ts_tsmart_evangelical_raw_score >= ts_tsmart_otherchristian_raw_score
+          AND ts_tsmart_evangelical_raw_score >= ts_tsmart_jewish_raw_score
+          AND ts_tsmart_evangelical_raw_score >= ts_tsmart_mormon_raw_score
+          AND ts_tsmart_evangelical_raw_score >= ts_tsmart_non_religious_raw_score
+          THEN 'Evangelical'
+          ELSE CASE
+       WHEN ts_tsmart_otherchristian_raw_score >= ts_tsmart_catholic_raw_score
+       		AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_evangelical_raw_score
+          AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_jewish_raw_score
+          AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_mormon_raw_score
+          AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_non_religious_raw_score
+          THEN 'Other Christian'
+          ELSE CASE
+       WHEN ts_tsmart_jewish_raw_score >= ts_tsmart_catholic_raw_score
+       		AND ts_tsmart_jewish_raw_score >= ts_tsmart_evangelical_raw_score
+          AND ts_tsmart_jewish_raw_score >= ts_tsmart_otherchristian_raw_score
+          AND ts_tsmart_jewish_raw_score >= ts_tsmart_mormon_raw_score
+          AND ts_tsmart_jewish_raw_score >= ts_tsmart_non_religious_raw_score
+          THEN 'Jewish'
+          ELSE CASE
+       WHEN ts_tsmart_mormon_raw_score >= ts_tsmart_catholic_raw_score
+       		AND ts_tsmart_mormon_raw_score >= ts_tsmart_evangelical_raw_score
+      		AND ts_tsmart_mormon_raw_score >= ts_tsmart_otherchristian_raw_score
+       		AND ts_tsmart_mormon_raw_score >= ts_tsmart_jewish_raw_score
+      		AND ts_tsmart_mormon_raw_score >= ts_tsmart_non_religious_raw_score
+          THEN 'Mormon'
+        ELSE CASE
+       WHEN ts_tsmart_non_religious_raw_score >= ts_tsmart_catholic_raw_score
+      	 	AND ts_tsmart_non_religious_raw_score >= ts_tsmart_evangelical_raw_score
+          AND ts_tsmart_non_religious_raw_score >= ts_tsmart_otherchristian_raw_score
+          AND ts_tsmart_non_religious_raw_score >= ts_tsmart_jewish_raw_score
+          AND ts_tsmart_non_religious_raw_score >= ts_tsmart_mormon_raw_score
+          THEN 'Non-Religious'
+        ELSE 'Unknown'
+        END
+        END
+        END
+        END
+        END
+     END AS religion_highest_score
+  , CASE
+  			WHEN religion_highest_score = 'Catholic' THEN ts_tsmart_catholic_raw_score
+        WHEN religion_highest_score = 'Evangelical' THEN ts_tsmart_evangelical_raw_score
+        WHEN religion_highest_score = 'Other Christian' THEN ts_tsmart_otherchristian_raw_score
+        WHEN religion_highest_score = 'Non-Christian' THEN ts_tsmart_nonchristian_raw_score
+        WHEN religion_highest_score = 'Jewish' THEN ts_tsmart_jewish_raw_score
+        WHEN religion_highest_score = 'Mormon' THEN ts_tsmart_mormon_raw_score
+        WHEN religion_highest_score = 'Non-Religious' THEN ts_tsmart_non_religious_raw_score
+     	 ELSE NULL
+		 END AS religion_score_number
+
+   , ntl_current.vb_vf_party AS political_party
+    
+  , ntl_current.ts_tsmart_partisan_score
+  , ntl_current.ts_tsmart_presidential_general_turnout_score
+  , ntl_current.ts_tsmart_midterm_general_turnout_score
+  , ntl_current.ts_tsmart_presidential_general_enthusiasm_score
+  , ntl_current.ts_tsmart_local_voter_score
+  , ntl_current.ts_tsmart_activist_score
+  , ntl_current.ts_tsmart_trump_defector_score
+  , ntl_current.ts_tsmart_biden_support_score
+  , ntl_current.ts_tsmart_veteran_score AS veteran_score
+  	-- ^A higher score indicates a higher likelihood that a person is a military veteran or an active service member.
+   , ntl_current.ts_tsmart_gunowner_score AS gunowner_score
+  	-- ^A higher score indicates a higher likelihood that a person is a gunowner.
+
+  , ntl_current.predictwise_racial_resentment_score AS racial_resentment_score
+  	-- ^The model was built off questions pertaining to black work ethic, historical discrimination, crime, and black protest. The score ranges from 0-100, with 0 meaning an individual is not at all racially resentful, and 100 meaning an individual is extremely racially resentful.
+    
+  , ntl_current.ts_tsmart_prochoice_score	
+  , ntl_current.ts_tsmart_path_to_citizen_score	
+  , ntl_current.ts_tsmart_climate_change_score	
+  , ntl_current.ts_tsmart_gun_control_score	
+  , ntl_current.ts_tsmart_minimum_wage_score
+  , ntl_current.ts_tsmart_progressive_tax_score
+  , ntl_current.ts_tsmart_labor_union_support_score
+  , ntl_current.predictwise_criminal_justice_reform_score
+  , ntl_current.predictwise_economic_populism_score
+  , ntl_current.predictwise_environmentalism_score
+  , ntl_current.predictwise_guns_score
+  , ntl_current.predictwise_healthcare_women_score
+  , ntl_current.predictwise_healthcare_score
+  , ntl_current.predictwise_immigrants_score
+  , ntl_current.predictwise_income_inequality_score
+  , ntl_current.predictwise_military_score
+  , ntl_current.predictwise_populism_score
+  , ntl_current.predictwise_regulation_score
+
+   , ntl_current.vb_purely_social_networker_demi_decile AS purely_social_network_score
+  	-- ^Such as Facebook. 1 represents those most likely and 20 represents those least likely.
+  , ntl_current.vb_personal_voice_social_networker_demi_decile AS personal_voice_social_network_score
+  	-- ^Such as Twitter. 1 represents those most likely and 20 represents those least likely.
+  , ntl_current.vb_professional_social_networker_demi_decile AS professional_social_network_score
+  	-- ^Such as LinkedIn. 1 represents those most likely and 20 represents those least likely.
+
+
+FROM ak_tmc_join
+LEFT JOIN ts.ntl_current
+	ON ntl_current.vb_voterbase_id = ak_tmc_join.tmc_voterbase_id
+
+-- Adding filter for now to check coverage on scores / make resulting table more manageable
+--WHERE vb_voterbase_id IS NOT NULL
+;
+
+
+-- Grant access:
+GRANT SELECT ON coc_reporting.ak_vf_member_demographics TO GROUP coc;
+GRANT ALL ON coc_reporting.ak_vf_member_demographics TO jharris1;
