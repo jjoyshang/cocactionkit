@@ -5,29 +5,32 @@ CREATE TABLE coc_reporting.ak_vf_member_demographics AS
 WITH ak_base AS (
 SELECT
 	core_user.id AS ak_userid -- to match with tmc_activist_pool
+  , core_user.email AS ak_email
   , subscription_status -- include to filter by 'subscribed', 'unsubscribed', 'bounced' and 'never'.
--- Including location info, since AK has most complete location info (compared to voterfile).
+-- Including location fields here as a backup, since not all ak_userids match to a person_id. Will be combined with Activist Pool location fields in final select.
   , city AS ak_city
   , state AS ak_state
   , zip AS ak_zip
-  , COUNT(core_action.id) AS count_actions -- Count the number of actions a user has taken.
-  , CASE WHEN count_actions IS NOT NULL THEN 1 ELSE NULL -- Creating to be able to filter by action takers and non-action takers.
-  		END AS action_taker_flag
+  , COUNT(core_action.id) AS count_actions -- Count the number of actions.
+
 FROM coc_ak.core_user
 LEFT JOIN coc_ak.core_action
 	ON core_user.id = core_action.user_id
 
 WHERE core_action.status = 'complete'
 
-GROUP BY 1,2,3,4,5 -- Group by core_user.id first. The rest don't matter.
+GROUP BY 1,2,3,4,5,6 -- Group by core_user.id first. The rest don't matter.
 )
 
 -- Joining AK users to voterbase_id through TMC activist pool
 , ak_tmc_join AS (
 SELECT
 	ak_base.*
-  	--, coc_person_fields.first_name AS tmc_first_name
-    --, coc_person_fields.last_name AS tmc_last_name
+  	, coc_person_fields.first_name AS tmc_first_name
+    , coc_person_fields.last_name AS tmc_last_name
+  	, coc_addresses.city AS tmc_city
+ 		, coc_addresses.state AS tmc_state
+ 		, coc_addresses.zip_code AS tmc_zip
   	, coc_person_fields.person_id AS tmc_person_id
   	, coc_identities.voterbase_id AS tmc_voterbase_id
 
@@ -47,16 +50,17 @@ LEFT JOIN tmc_activist_pool.coc_person_fields
     AND coc_person_fields.vendor = 'action_kit'
 LEFT JOIN tmc_activist_pool.coc_identities
   	ON coc_person_fields.person_id = coc_identities.person_id
+LEFT JOIN tmc_activist_pool.coc_addresses
+  	ON coc_addresses.person_id = coc_person_fields.person_id
 )
   
-, voterfile_join AS (
--- Joining to voterfile
+--, voterfile_join AS (
+-- Joining to voterfile. Bringing in a bunch of fields that seem interesting for now.
 SELECT
-	ak_tmc_join.*
-  --, ntl_current.vb_voterbase_id . Used field to check join, but now duplicate not needed
+	ak_tmc_join.* --tmc_voterbase_id
 
 -- Demographic fields from the voterfile:
----- All current fields have been checked for 80% coverage (of users that match) 
+/* All current fields have been checked for 80% coverage (of users that match) */
   , ntl_current.vb_voterbase_deceased_flag AS deceased_flag -- Something I could filter, if desired
   , ntl_current.vb_voterbase_age AS age
 	, ntl_current.vb_voterbase_gender AS gender
@@ -244,9 +248,11 @@ LEFT JOIN ts.ntl_current
 	ON ntl_current.vb_voterbase_id = ak_tmc_join.tmc_voterbase_id
 
 WHERE latest_voterbase_id_match = 1
-)
+--)
 
+/* 
 SELECT
+NVL(state, state) AS state whatever */
 
 ;
 
