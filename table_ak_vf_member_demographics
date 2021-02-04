@@ -30,10 +30,15 @@ SELECT
     --, coc_person_fields.last_name AS tmc_last_name
   	, coc_person_fields.person_id AS tmc_person_id
   	, coc_identities.voterbase_id AS tmc_voterbase_id
-  	, CASE WHEN coc_person_fields.person_id IS NOT NULL THEN (ROW_NUMBER () OVER (PARTITION BY coc_person_fields.person_id ORDER BY NVL(coc_identities.updated_at, NULL) DESC NULLS LAST))
+
+-- For deduping the coc_identities.person_id and coc_identities.voterbase_id. 
+/*I will NOT be using a CTE in this query to filter for only the latest person_id and voterbase_id. This is because TMC can match hundreds of person_ids to a single voterbase_id, and I do not want to lose the data for those hundreds of people if this table is needed to join to other databases. INSTEAD, any Selects that are joining to the voterfile should filter for the latest voterbase_id, to only include one record for each person in the voter file (rather than potentially having 300 records of the same person). A similar problem occurs with matching user_ids in Action Kit to the Activist Pool, to the scale of tens not hundreds. */
+  	, CASE WHEN coc_identities.person_id IS NOT NULL THEN (ROW_NUMBER () OVER (PARTITION BY coc_identities.person_id ORDER BY NVL(coc_identities.updated_at, NULL) DESC NULLS LAST))
   				ELSE 1
-  			END AS person_id_rn -- Adding field to dedup by person_id. By formatting this as a CASE WHEN, a value of "1" is assigned for rows without a person_id (appears to be people who are "unsubscribed" or "bounced" in AK). This way I am not collapsing all of these people into one record.
-  	, CASE WHEN 
+  			END AS latest_person_id_match -- Adding field to dedup by person_id. By formatting this as a CASE WHEN, a value of "1" is assigned for rows without a person_id (appears to be people who are "unsubscribed" or "bounced" in AK). This way I am not collapsing all of these people into one record.
+  	, CASE WHEN coc_identities.person_id IS NOT NULL THEN (ROW_NUMBER () OVER (PARTITION BY coc_identities.voterbase_id ORDER BY NVL(coc_identities.updated_at, NULL) DESC NULLS LAST))
+  				ELSE 1
+  			END AS latest_voterbase_id_match
 FROM ak_base
 
 -- Left Join, since want to include all people from Action Kit. And only records from Activist Pool if they match.
@@ -43,14 +48,8 @@ LEFT JOIN tmc_activist_pool.coc_person_fields
 LEFT JOIN tmc_activist_pool.coc_identities
   	ON coc_person_fields.person_id = coc_identities.person_id
 )
-
-, person_id_dedup AS (
-SELECT *
-FROM ak_tmc_join
-WHERE person_id_rn = 1
-)
   
-  
+, voterfile_join AS (
 -- Joining to voterfile
 SELECT
 	ak_tmc_join.*
@@ -244,8 +243,11 @@ FROM ak_tmc_join
 LEFT JOIN ts.ntl_current
 	ON ntl_current.vb_voterbase_id = ak_tmc_join.tmc_voterbase_id
 
--- Adding filter for now to check coverage on scores / make resulting table more manageable
---WHERE vb_voterbase_id IS NOT NULL
+WHERE latest_voterbase_id_match = 1
+)
+
+SELECT
+
 ;
 
 
