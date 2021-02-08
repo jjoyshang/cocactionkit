@@ -1,3 +1,14 @@
+/*This table attributes demographic fields from the voterfile to users in ActionKit.
+
+Note that not all users in ActionKit could be matched to a person in the voterbase. Therefore, each voterfile record is only included for its most recent match to the Activist Pool.
+
+
+I recommend filering this table by subscription status ('ak_sub_status') and 'deceased_flag IS NOT NULL'.
+
+You can query this table by user ids in ActionKit, person ids in the Activist Pool (latest_person_id_match = 1), or voterbase ids (latest_voterbase_id_match = 1). */
+
+
+
 DROP TABLE IF EXISTS coc_reporting.ak_vf_member_demographics;
 CREATE TABLE coc_reporting.ak_vf_member_demographics AS
 
@@ -260,6 +271,11 @@ SELECT
 	ak_userid
   , tmc_person_id
   , tmc_voterbase_id
+
+/* These fields rank the person_id and voterbase_id matched with an ak_userid, with the most recent match being '1'. This final select includes all ak_userids. But if you wanted to query this table on uique person_ids or voterbase_ids, you could use one of these fields as a filter. */
+  , latest_person_id_match
+  , latest_voterbase_id_match
+  
   , tmc_first_name
   , tmc_last_name
   , ak_email
@@ -271,14 +287,12 @@ SELECT
   , NVL(vb_state, ak_state) AS state
   , NVL(vb_zip , ak_zip) AS zipcode
   
-  , latest_person_id_match
-  , latest_voterbase_id_match
   , voterfile_join.*
+  
 FROM ak_tmc_join
 
 LEFT JOIN voterfile_join
 	ON ak_tmc_join.ak_userid = voterfile_join.vb_ak_userid
-
 ;
 
 
