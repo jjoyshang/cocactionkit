@@ -6,12 +6,12 @@ WITH ak_base AS (
 SELECT
 	core_user.id AS ak_userid -- to match with tmc_activist_pool
   , core_user.email AS ak_email
-  , subscription_status -- include to filter by 'subscribed', 'unsubscribed', 'bounced' and 'never'.
+  , subscription_status AS ak_sub_status-- include to filter by 'subscribed', 'unsubscribed', 'bounced' and 'never'.
 -- Including location fields here as a backup, since not all ak_userids match to a person_id. Will be combined with Activist Pool location fields in final select.
   , city AS ak_city
   , state AS ak_state
   , zip AS ak_zip
-  , COUNT(core_action.id) AS count_actions -- Count the number of actions.
+  , COUNT(core_action.id) AS ak_count_actions -- Count the number of actions. Not the most useful metric since so many things count as an action.
 
 FROM coc_ak.core_user
 LEFT JOIN coc_ak.core_action
@@ -22,26 +22,26 @@ WHERE core_action.status = 'complete'
 GROUP BY 1,2,3,4,5,6 -- Group by core_user.id first. The rest don't matter.
 )
 
+
 -- Joining AK users to voterbase_id through TMC activist pool
 , ak_tmc_join AS (
 SELECT
 	ak_base.*
   	, coc_person_fields.first_name AS tmc_first_name
     , coc_person_fields.last_name AS tmc_last_name
-  	, coc_addresses.city AS tmc_city
- 		, coc_addresses.state AS tmc_state
- 		, coc_addresses.zip_code AS tmc_zip
   	, coc_person_fields.person_id AS tmc_person_id
   	, coc_identities.voterbase_id AS tmc_voterbase_id
 
--- For deduping the coc_identities.person_id and coc_identities.voterbase_id. 
-/*I will NOT be using a CTE in this query to filter for only the latest person_id and voterbase_id. This is because TMC can match hundreds of person_ids to a single voterbase_id, and I do not want to lose the data for those hundreds of people if this table is needed to join to other databases. INSTEAD, any Selects that are joining to the voterfile should filter for the latest voterbase_id, to only include one record for each person in the voter file (rather than potentially having 300 records of the same person). A similar problem occurs with matching user_ids in Action Kit to the Activist Pool, to the scale of tens not hundreds. */
+/* Calculate the most recently matching person_id to ak_userid, with multiple ak_userids matching to one person_id. Therefore, I will not be deduping by person_id in this query. But it will be an option to filter in queries referencing this basetable to only the most recet matching person_id.*/
   	, CASE WHEN coc_identities.person_id IS NOT NULL THEN (ROW_NUMBER () OVER (PARTITION BY coc_identities.person_id ORDER BY NVL(coc_identities.updated_at, NULL) DESC NULLS LAST))
   				ELSE 1
-  			END AS latest_person_id_match -- Adding field to dedup by person_id. By formatting this as a CASE WHEN, a value of "1" is assigned for rows without a person_id (appears to be people who are "unsubscribed" or "bounced" in AK). This way I am not collapsing all of these people into one record.
-  	, CASE WHEN coc_identities.person_id IS NOT NULL THEN (ROW_NUMBER () OVER (PARTITION BY coc_identities.voterbase_id ORDER BY NVL(coc_identities.updated_at, NULL) DESC NULLS LAST))
+  			END AS latest_person_id_match -- Formatting as a CASE WHEN so that all null values are kept, instead of being collapsed into one.
+  
+  /*I will NOT be using a CTE in this query to filter for only the most recently matched voterbase_id. This is because TMC can match hundreds of person_ids to a single voterbase_id, and I do not want to lose the data for those hundreds of people if this table is needed to join to other databases. INSTEAD, any Selects that are joining to the voterfile should filter for the latest voterbase_id, to only include one record for each person in the voter file (rather than potentially having 300 records of the same person). */
+  	, CASE WHEN coc_identities.voterbase_id IS NOT NULL THEN (ROW_NUMBER () OVER (PARTITION BY coc_identities.voterbase_id ORDER BY NVL(coc_identities.updated_at, NULL) DESC NULLS LAST))
   				ELSE 1
-  			END AS latest_voterbase_id_match
+  			END AS latest_voterbase_id_match -- Formatting as a CASE WHEN so that all null values are kept, instead of being collapsed into one.
+  
 FROM ak_base
 
 -- Left Join, since want to include all people from Action Kit. And only records from Activist Pool if they match.
@@ -50,18 +50,20 @@ LEFT JOIN tmc_activist_pool.coc_person_fields
     AND coc_person_fields.vendor = 'action_kit'
 LEFT JOIN tmc_activist_pool.coc_identities
   	ON coc_person_fields.person_id = coc_identities.person_id
-LEFT JOIN tmc_activist_pool.coc_addresses
-  	ON coc_addresses.person_id = coc_person_fields.person_id
 )
   
---, voterfile_join AS (
+
+, voterfile_join AS (
 -- Joining to voterfile. Bringing in a bunch of fields that seem interesting for now.
 SELECT
-	ak_tmc_join.* --tmc_voterbase_id
+	ak_userid AS vb_ak_userid
 
 -- Demographic fields from the voterfile:
-/* All current fields have been checked for 80% coverage (of users that match) */
+---- All current fields have been checked for 80% coverage (of users that match)
   , ntl_current.vb_voterbase_deceased_flag AS deceased_flag -- Something I could filter, if desired
+  , vb_tsmart_city AS vb_city
+  , vb_tsmart_state AS vb_state
+  , vb_tsmart_zip AS vb_zip
   , ntl_current.vb_voterbase_age AS age
 	, ntl_current.vb_voterbase_gender AS gender
 	, CASE WHEN ntl_current.vb_voterbase_race = 'Uncoded' THEN 'Unknown'
@@ -198,7 +200,7 @@ SELECT
      	 ELSE NULL
 		 END AS religion_score_number
 
-   , ntl_current.vb_vf_party AS political_party
+/*   , ntl_current.vb_vf_party AS political_party
     
   , ntl_current.ts_tsmart_partisan_score
   , ntl_current.ts_tsmart_presidential_general_turnout_score
@@ -241,18 +243,41 @@ SELECT
   	-- ^Such as Twitter. 1 represents those most likely and 20 represents those least likely.
   , ntl_current.vb_professional_social_networker_demi_decile AS professional_social_network_score
   	-- ^Such as LinkedIn. 1 represents those most likely and 20 represents those least likely.
-
+*/
 
 FROM ak_tmc_join
 LEFT JOIN ts.ntl_current
 	ON ntl_current.vb_voterbase_id = ak_tmc_join.tmc_voterbase_id
 
 WHERE latest_voterbase_id_match = 1
---)
+  -- Filtering to only match to latest matched voterbase_id from the Activist Pool. This is because one voterbase_id may be matched to hundreds of person_ids.
+)
 
-/* 
+
+--Final select keeps all original ak_userids from ActionKit, in order to facilitate joining
+
 SELECT
-NVL(state, state) AS state whatever */
+	ak_userid
+  , tmc_person_id
+  , tmc_voterbase_id
+  , tmc_first_name
+  , tmc_last_name
+  , ak_email
+  , ak_sub_status
+  , ak_count_actions
+
+/* For location fields, filtering for fields from the voterbase first in order to keep consistent data source for records that are matching to the voterbase. If the record does not match, the location comes from Action Kit.*/
+  , NVL(vb_city, ak_city) AS city
+  , NVL(vb_state, ak_state) AS state
+  , NVL(vb_zip , ak_zip) AS zipcode
+  
+  , latest_person_id_match
+  , latest_voterbase_id_match
+  , voterfile_join.*
+FROM ak_tmc_join
+
+LEFT JOIN voterfile_join
+	ON ak_tmc_join.ak_userid = voterfile_join.vb_ak_userid
 
 ;
 
