@@ -1,4 +1,22 @@
-/* */
+/*How many dollars have been donated, total number of donations, and number of first time donations were 
+made by mailer campaign category since 2018?
+
+
+Campaign categories were manually assigned here: https://docs.google.com/spreadsheets/d/1FRVhCEXS6M_olUHq1CeR_eAUnJmS0FYtGOO5x8KZfYk/edit?usp=sharing
+then imported into the coc_reporting.ak_topdonationmailers_20182020_categories table.
+
+The categories were determined by manually matching the mailer campaign name, subject line, or email body.
+Many categories are issues (like Criminal Justice), but also include key themes of the mailer, such as if it featured Black
+Mothers or referenced a big news event like Flint, MI.
+
+Only the top 98 mailer campaign tags were categorized, excluding the several EOY, Giving Tuesday, or otherwise solely
+fundraising based campaigns (all of which had multiple subject line themes).
+
+
+This query also references this Donations table: https://platform.civisanalytics.com/spa/#/scripts/sql/107820843
+It is created by Spence. Still being revised as of 18 FEB 2021.
+*/
+
 
 WITH donations AS (
 SELECT DISTINCT
@@ -39,7 +57,7 @@ SELECT
   , category_tags.*
 
 FROM coc_reporting.ak_topdonationmailers_20182020_categories AS category_tags
-  -- ^Starting with this table since it has all the campaign category tags that I want to work with. These campaigns tags are much fewer than the total amount from core_mailing_tags. It will hopefully reduce the number of dupes.
+  -- ^Starting with this table since it has all the campaign category tags that I want to work with. These campaigns tags are much fewer than the total amount from core_mailing_tags.
 LEFT JOIN coc_ak.core_mailing_tags
   ON core_mailing_tags.tag_id = category_tags.tag_id
 LEFT JOIN donations_clean
