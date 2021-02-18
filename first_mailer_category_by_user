@@ -8,9 +8,11 @@ SELECT DISTINCT
 -- Below fields needed to be filtered for the ROW NUMBER function to work correctly.
   , CASE WHEN recurring = '0' THEN NULL ELSE recurring END AS recurring_clean
   , CASE WHEN first_donation = '0' THEN NULL ELSE first_donation END AS first_donation_clean
+  , CASE WHEN first_one_time_donation = '0' THEN NULL ELSE first_one_time_donation AS first_one_time_donation_clean
+  , CASE WHEN first_recurring_donation = '0' THEN NULL ELSE first_recurring_donation AS first_recurring_donation_clean
   , CASE WHEN reactivated_former_recurring = '0' THEN NULL ELSE reactivated_former_recurring END AS reactivated_former_recurring_clean
   
-  , ROW_NUMBER () OVER (PARTITION BY transaction_id ORDER BY recurring_clean, first_donation_clean, reactivated_former_recurring_clean DESC NULLS LAST) AS transaction_dupe
+  , ROW_NUMBER () OVER (PARTITION BY transaction_id ORDER BY recurring_clean, first_donation_clean, first_one_time_donation_clean, first_recurring_donation_clean, reactivated_former_recurring_clean DESC NULLS LAST) AS transaction_dupe
 
 FROM coc_reporting.donation_base_20210202
 WHERE clean_source = 'email' -- Including donations from emails only
@@ -26,6 +28,8 @@ SELECT
   , total
   , recurring_clean AS recurring
   , first_donation_clean AS first_donation
+  , first_one_time_donation_clean AS first_one_time_donation
+  , first_recurring_donation_clean AS first_recurring_donation
   , reactivated_former_recurring_clean AS reactivated_former_recurring
 FROM donations
 WHERE transaction_dupe = 1
@@ -47,11 +51,12 @@ LEFT JOIN donations_clean
 
 SELECT
 	user_id
-    , CASE WHEN first_donation = 1 THEN tag_categories END AS first_donation_category
-    , CASE WHEN recurring = 1 THEN tag_categories END AS recurring_donation_category
-    , CASE WHEN latest_gift_rank = 1 THEN tag_categories END AS latest_donation_category
+  , CASE WHEN first_donation = 1 THEN tag_categories END AS first_donation_category
+  , CASE WHEN first_one_timedonation = 1 THEN tag_categories END AS first_onetime_donation_category
+  , CASE WHEN first_recurring_donation = 1 THEN tag_categories END AS first_recurring_donation_category
+  , CASE WHEN latest_gift_rank = 1 THEN tag_categories END AS latest_donation_category
 FROM base
 WHERE first_donation IS NOT NULL
-	OR recurring IS NOT NULL
-    OR latest_gift_rank = 1
-LIMIT 20
+	OR first_one_timedonation IS NOT NULL
+	OR first_recurring_donation IS NOT NULL
+  OR latest_gift_rank = 1
