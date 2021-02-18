@@ -1,0 +1,43 @@
+WITH donations AS (
+SELECT DISTINCT
+	transaction_id
+  , user_id
+  , mailing_id
+
+-- Below fields to filter on
+  , gift_date
+  , total
+  , recurring
+  , first_donation
+  , reactivated_former_recurring
+    
+FROM coc_reporting.donation_base_20210202
+WHERE clean_source = 'email' -- Including donations from emails only
+  AND gift_date >= '2018-01-01'
+)
+
+SELECT 
+	COUNT(transaction_id) AS count_donations
+	, SUM(total) AS total_donation_dollars
+  , core_mailing_tags.tag_id
+  , core_tag.name AS tag_name
+  , CASE
+      WHEN core_tag.name LIKE '*%' THEN 'Issue'
+      WHEN core_tag.name LIKE '@%' THEN 'Department'
+      WHEN core_tag.name LIKE 'Camp%' THEN 'Campaign'
+      WHEN core_tag.name LIKE 'CAMP%' THEN 'Campaign'
+      ELSE NULL
+    END AS tag_type
+
+FROM donations  
+LEFT JOIN coc_ak.core_mailing_tags
+	ON donations.mailing_id = core_mailing_tags.mailing_id
+LEFT JOIN coc_ak.core_tag
+	ON core_mailing_tags.tag_id = core_tag.id
+
+WHERE core_tag.name LIKE '*%'
+  OR core_tag.name LIKE '@%'
+  OR core_tag.name LIKE 'Camp%'
+  OR core_tag.name LIKE 'CAMP%'
+
+GROUP BY 3,4
