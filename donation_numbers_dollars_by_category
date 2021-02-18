@@ -1,0 +1,47 @@
+WITH donations AS (
+SELECT DISTINCT
+	transaction_id
+  , user_id
+  , mailing_id
+  , gift_date
+  , total
+-- Below fields needed to be filtered for the ROW NUMBER function to work correctly.
+  , CASE WHEN recurring = '0' THEN NULL ELSE recurring END AS recurring_clean
+  , CASE WHEN first_donation = '0' THEN NULL ELSE first_donation END AS first_donation_clean
+  , CASE WHEN reactivated_former_recurring = '0' THEN NULL ELSE reactivated_former_recurring END AS reactivated_former_recurring_clean
+  
+  , ROW_NUMBER () OVER (PARTITION BY transaction_id ORDER BY recurring_clean, first_donation_clean, reactivated_former_recurring_clean DESC NULLS LAST) AS transaction_dupe
+
+FROM coc_reporting.donation_base_20210202
+WHERE clean_source = 'email' -- Including donations from emails only
+  AND gift_date >= '2018-01-01'
+)
+
+, donations_clean AS (
+SELECT
+transaction_id
+  , user_id
+  , mailing_id
+  , gift_date
+  , total
+  , recurring_clean AS recurring
+  , first_donation_clean AS recurring
+  , reactivated_former_recurring_clean AS reactivated_former_recurring
+FROM donations
+WHERE transaction_dupe = 1
+)
+
+SELECT
+	tag_categories
+    , COUNT(transaction_id) AS count_donations
+    , SUM(total) AS dollars_donated
+
+FROM coc_reporting.ak_topdonationmailers_20182020_categories AS category_tags
+  -- ^Starting with this table since it has all the campaign category tags that I want to work with. These campaigns tags are much fewer than the total amount from core_mailing_tags. It will hopefully reduce the number of dupes.
+LEFT JOIN coc_ak.core_mailing_tags
+  ON core_mailing_tags.tag_id = category_tags.tag_id
+LEFT JOIN donations_clean
+	ON donations_clean.mailing_id = core_mailing_tags.mailing_id
+
+GROUP BY 1 
+ORDER BY 3 DESC
