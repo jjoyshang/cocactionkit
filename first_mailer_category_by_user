@@ -39,7 +39,8 @@ WHERE transaction_dupe = 1
 SELECT
 	donations_clean.*
   , category_tags.*
-  , ROW_NUMBER () OVER (PARTITION BY user_id ORDER BY gift_date DESC) AS latest_gift_rank
+  , RANK () OVER (PARTITION BY user_id ORDER BY gift_date DESC) AS latest_gift_rank
+      -- ^Using a RANK here instead of ROW_NUMBER , because one mailer may be tagged with multiple categories.
 
 FROM coc_reporting.ak_topdonationmailers_20182020_categories AS category_tags
   -- ^Starting with this table since it has all the campaign category tags that I want to work with. These campaigns tags are much fewer than the total amount from core_mailing_tags.
