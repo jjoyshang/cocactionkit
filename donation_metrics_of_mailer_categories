@@ -7,12 +7,12 @@ The categories were determined by manually matching the mailer campaign name, su
 Many categories are issues (like Criminal Justice), but also include key themes of the mailer, such as if it featured Black
 Mothers or referenced a big news event like Flint, MI.
 
-Only the top 98 mailer campaign tags were categorized, excluding the several EOY, Giving Tuesday, or otherwise solely
-fundraising based campaigns (all of which had multiple subject line themes).
+Only the top 98 mailer's (since 2018) campaign tags were categorized, excluding the several EOY, Giving Tuesday, or 
+otherwise solely fundraising based campaigns (all of which had multiple subject line themes).
 
 
 This query also references this Donations table: https://platform.civisanalytics.com/spa/#/scripts/sql/107820843
-It is created by Spence. Still being revised as of 18 FEB 2021.
+Created by Spence. Still being revised as of 18 FEB 2021.
 */
 
 
@@ -23,7 +23,7 @@ SELECT DISTINCT
   , mailing_id
   , gift_date
   , total
--- Below fields needed to be filtered for the ROW NUMBER function to work correctly.
+-- Below fields needed to be transformed for the ROW NUMBER function to work correctly.
   , CASE WHEN recurring = '0' THEN NULL ELSE recurring END AS recurring_clean
   , CASE WHEN first_donation = '0' THEN NULL ELSE first_donation END AS first_donation_clean
   , CASE WHEN first_one_time_donation = '0' THEN NULL ELSE first_one_time_donation END AS first_one_time_donation_clean
@@ -31,6 +31,7 @@ SELECT DISTINCT
   , CASE WHEN reactivated_former_recurring = '0' THEN NULL ELSE reactivated_former_recurring END AS reactivated_former_recurring_clean
   
   , ROW_NUMBER () OVER (PARTITION BY transaction_id ORDER BY recurring_clean, first_donation_clean, first_one_time_donation_clean, first_recurring_donation_clean, reactivated_former_recurring_clean DESC NULLS LAST) AS transaction_dupe
+    -- ^For deduping. I'm seeing that one transaction will have multiple records, one with a flag for these donation types and one without.
 
 FROM coc_reporting.donation_base_20210202
 WHERE clean_source = 'email' -- Including donations from emails only
