@@ -16,6 +16,7 @@ Created by Spence. Still being revised as of 18 FEB 2021.
 */
 
 
+-- This CTE: Bring in relevant fields from the Donations base-table
 WITH donations AS (
 SELECT DISTINCT
 	transaction_id
@@ -35,9 +36,10 @@ SELECT DISTINCT
 
 FROM coc_reporting.donation_base_20210202
 WHERE clean_source = 'email' -- Including donations from emails only
-  AND gift_date >= '2018-01-01'
+  AND gift_date >= '2018-01-01' -- Capping analysis at 2018 as the start date.
 )
 
+-- This CTE: dedup on transaction_id. Join to core_mailing table to bring in relevant fields about mailings.
 , donations_clean AS (
 SELECT
   transaction_id
@@ -60,6 +62,7 @@ WHERE transaction_dupe = 1
   AND core_mailing.status = 'completed'
 )
 
+-- This CTE: Bring in table that I made assigning issue tags to mailer campaigns.
 , base AS (
 SELECT
 	donations_clean.*
@@ -73,24 +76,34 @@ LEFT JOIN donations_clean
 	ON donations_clean.mailing_id = core_mailing_tags.mailing_id
 )
 
+-- This CTE: Calculations to find dates of first & most recent mailing sent by issue tag.
+, isolate_dates AS (
+SELECT DISTINCT
+  tag_categories
+  , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories) AS first_mailer_sent_date
+  , LAST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories) AS most_recent_mailer_sent_date
+FROM base
+)
+
+-- This CTE: Aggregate calculations by issue tag.
+, calc_metrics AS (
 SELECT 
 	tag_categories
   , COUNT(DISTINCT mailing_id) AS number_mailers
   , SUM (mailing_send_count) AS emails_sent_out
-  , FIRST_VALUE (mailing_date) OVER (PARTITION BY tag_categories ORDER BY mailing_date ASC) AS first_mailer_sent
-  /*NEED TO TEST IF THIS
-    , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories)
-    OR THIS
-    , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories ORDER BY mailing_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS first_mailer_sent
-    IS CORRECT.
-    And how tob get a clean final table
-    */
-  --, LAST (mailing_date) AS last_mailer_sent
   , SUM(total) AS dollars_donated
   , COUNT(transaction_id) AS count_donations
-  , COUNT(first_donation) AS count_first_donation
+  , COUNT(first_onetime_donation) AS count_first_onetime_donation
   , COUNT(first_recurring_donation) AS count_first_recurring_donation
 FROM base
 
 GROUP BY 1
-ORDER BY 5 DESC
+)
+
+SELECT
+  calc_metrics.*
+  , first_mailer_sent_date
+  , most_recent_mailer_sent_date
+FROM calc_metrics
+LEFT JOIN isolate_dates 
+  ON calc_metrics.tag_categories = isolate_dates.tag_categories
