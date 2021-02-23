@@ -7,7 +7,7 @@ The categories were determined by manually matching the mailer campaign name, su
 Many categories are issues (like Criminal Justice), but also include key themes of the mailer, such as if it featured Black
 Mothers or referenced a big news event like Flint, MI.
 
-Only the top 98 mailer's (since 2018) campaign tags were categorized, excluding the several EOY, Giving Tuesday, or 
+Only the top 98 mailer's (by dollars donated since 2018) campaign tags were categorized, excluding the several EOY, Giving Tuesday, or 
 otherwise solely fundraising based campaigns (all of which had multiple subject line themes).
 
 
@@ -50,8 +50,14 @@ SELECT
   , first_one_time_donation_clean AS first_onetime_donation
   , first_recurring_donation_clean AS first_recurring_donation
   , reactivated_former_recurring_clean AS reactivated_former_recurring
+  , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date
+  , core_mailing.expected_send_count AS mailing_send_count
 FROM donations
+LEFT JOIN coc_ak.core_mailing
+  ON donations.mailing_id = core_mailing.id
+  
 WHERE transaction_dupe = 1
+  AND core_mailing.status = 'completed'
 )
 
 , base AS (
@@ -70,6 +76,16 @@ LEFT JOIN donations_clean
 SELECT 
 	tag_categories
   , COUNT(DISTINCT mailing_id) AS number_mailers
+  , SUM (mailing_send_count) AS emails_sent_out
+  , FIRST_VALUE (mailing_date) OVER (PARTITION BY tag_categories ORDER BY mailing_date ASC) AS first_mailer_sent
+  /*NEED TO TEST IF THIS
+    , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories)
+    OR THIS
+    , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories ORDER BY mailing_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS first_mailer_sent
+    IS CORRECT.
+    And how tob get a clean final table
+    */
+  --, LAST (mailing_date) AS last_mailer_sent
   , SUM(total) AS dollars_donated
   , COUNT(transaction_id) AS count_donations
   , COUNT(first_donation) AS count_first_donation
