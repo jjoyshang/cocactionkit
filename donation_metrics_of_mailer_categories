@@ -39,6 +39,7 @@ WHERE clean_source = 'email' -- Including donations from emails only
   AND gift_date >= '2018-01-01' -- Capping analysis at 2018 as the start date.
 )
 
+
 -- This CTE: dedup on transaction_id. Join to core_mailing table to bring in relevant fields about mailings.
 , donations_clean AS (
 SELECT
@@ -62,6 +63,7 @@ WHERE transaction_dupe = 1
   AND core_mailing.status = 'completed'
 )
 
+
 -- This CTE: Bring in table that I made assigning issue tags to mailer campaigns.
 , base AS (
 SELECT
@@ -76,14 +78,49 @@ LEFT JOIN donations_clean
 	ON donations_clean.mailing_id = core_mailing_tags.mailing_id
 )
 
+
+/* Code for adding mailer entity is finished. Need input on structure before fully integrating.
+, add_entity AS (
+SELECT
+  tag_categories
+  , core_tag.name AS mailer_entity
+  , COUNT(core_tag.name) AS count_entity
+FROM base
+LEFT JOIN coc_ak.core_mailing_tags
+  ON core_mailing_tags.mailing_id = base.mailing_id
+LEFT JOIN coc_ak.core_tag
+  ON core_mailing_tags.tag_id = core_tag.id
+
+WHERE core_tag.name LIKE '[%]' -- Notation for entity tags: PAC, c3, c4
+  AND tag_categories IS NOT NULL
+
+GROUP BY 1,2
+)
+
+
+, add_entity2 AS (
+SELECT
+  add_entity.tag_categories
+  , add_entity.mailer_entity
+FROM add_entity
+JOIN (SELECT add_entity.tag_categories, MAX(add_entity.count_entity) AS max_count_entity
+        FROM add_entity
+        GROUP BY add_entity.tag_categories) 
+      AS subquery
+  ON add_entity.tag_categories = subquery.tag_categories
+  AND add_entity.count_entity = subquery.max_count_entity
+)
+*/
+
 -- This CTE: Calculations to find dates of first & most recent mailing sent by issue tag.
 , isolate_dates AS (
 SELECT DISTINCT
   tag_categories
-  , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories) AS first_mailer_sent_date
-  , LAST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories) AS most_recent_mailer_sent_date
+  , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories ORDER BY mailing_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS first_mailer_sent_date
+  , LAST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_categories ORDER BY mailing_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS most_recent_mailer_sent_date
 FROM base
 )
+
 
 -- This CTE: Aggregate calculations by issue tag.
 , calc_metrics AS (
@@ -99,6 +136,7 @@ FROM base
 
 GROUP BY 1
 )
+
 
 SELECT
   calc_metrics.*
