@@ -19,8 +19,6 @@ LEFT JOIN coc_ak.core_mailing
   
 WHERE clean_source = 'email' -- Including donations from emails only
   AND gift_date >= '2018-01-01'
-  --AND core_mailing.status = 'completed'
- -- AND mailing_date >= '2018-01-01'
 )
 
 
