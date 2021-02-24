@@ -3,6 +3,8 @@ SELECT DISTINCT
 	transaction_id
   , user_id
   , mailing_id
+  , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date -- converting field to date data type
+  , core_mailing.expected_send_count AS mailing_send_count
 
 -- Below fields to filter on
   , gift_date
@@ -12,13 +14,19 @@ SELECT DISTINCT
   , reactivated_former_recurring
     
 FROM coc_reporting.donation_base_20210202
+LEFT JOIN coc_ak.core_mailing
+  ON donation_base_20210202.mailing_id = core_mailing.id
+  
 WHERE clean_source = 'email' -- Including donations from emails only
   AND gift_date >= '2018-01-01'
+  AND core_mailing.status = 'completed'
+  AND mailing_date >= '2018-01-01'
 )
 
+
+, add_tags AS (
 SELECT 
-	COUNT(transaction_id) AS count_donations
-	, SUM(total) AS total_donation_dollars
+  donations.*
   , core_mailing_tags.tag_id
   , core_tag.name AS tag_name
   , CASE
@@ -39,5 +47,32 @@ WHERE core_tag.name LIKE '*%'
   OR core_tag.name LIKE '@%'
   OR core_tag.name LIKE 'Camp%'
   OR core_tag.name LIKE 'CAMP%'
+)
 
-GROUP BY 3,4
+, isolate_dates AS (
+SELECT DISTINCT
+  tag_id
+  , FIRST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_id ORDER BY mailing_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS first_mailer_sent_date
+  , LAST_VALUE (mailing_date IGNORE NULLS) OVER (PARTITION BY tag_id ORDER BY mailing_date ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS most_recent_mailer_sent_date
+FROM add_tags
+)
+
+, calc_metrics AS (
+SELECT
+	tag_id
+	, tag_name
+	, COUNT(DISTINCT mailing_id) AS number_mailers
+  , SUM (mailing_send_count) AS emails_sent_out
+	, COUNT(transaction_id) AS count_donations
+	, SUM(total) AS total_donation_dollars
+FROM add_tags
+GROUP BY 1,2
+)
+
+SELECT 
+  calc_metrics.*
+  , first_mailer_sent_date
+  , most_recent_mailer_sent_date
+FROM calc_metrics
+LEFT JOIN isolate_dates
+  ON calc_metrics.tag_id = isolate_dates.tag_id
