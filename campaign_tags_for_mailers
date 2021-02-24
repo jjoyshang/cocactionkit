@@ -1,12 +1,18 @@
+/*Pull a table with mailer campaigns with metrics on how donations from those mailers performed.
+Looking at donations since 2018. 
+
+This query references this Donations table: https://platform.civisanalytics.com/spa/#/scripts/sql/107820843
+Created by Spence. Still being revised as of 18 FEB 2021.*/
+
+
+-- This CTE: Bring in relevant fields from the Donations base-table
 WITH donations AS (
-SELECT DISTINCT
+SELECT DISTINCT -- Spence told me there's dupes in the basetable and recommended using SELECT DISTINCT.
 	transaction_id
   , user_id
   , mailing_id
   , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date -- converting field to date data type
   , core_mailing.expected_send_count AS mailing_send_count
-
--- Below fields to filter on
   , gift_date
   , total
   , recurring
@@ -22,6 +28,7 @@ WHERE clean_source = 'email' -- Including donations from emails only
 )
 
 
+-- This CTE: Add campaign, issue, and department tags of donation mailers
 , add_tags AS (
 SELECT 
   donations.*
@@ -48,24 +55,29 @@ WHERE core_tag.name LIKE '*%'
 )
 
 
- --Code for adding mailer entity is finished. Want input on structure before fully integrating.
+/* Hiding these CTEs for now. One campaign will have mailers for multiple entities, which creates duplicates in the 
+final table.
+
+-- add_entity CTEs: Bring in the tag for entity (PAC, c3, c4) of mailers.
 , add_entity AS (
-SELECT
-  add_tags.tag_id
+SELECT DISTINCT
+  add_tags.tag_id AS campaign_tag_id
   , core_tag.name AS mailer_entity
-  , COUNT(core_tag.name) AS count_entity
+ -- , COUNT(core_tag.name) AS count_entity -- use to 
 FROM add_tags
 LEFT JOIN coc_ak.core_mailing_tags
   ON core_mailing_tags.mailing_id = add_tags.mailing_id
 LEFT JOIN coc_ak.core_tag
   ON core_mailing_tags.tag_id = core_tag.id
 
-WHERE core_tag.name LIKE '[%]' -- Notation for entity tags: PAC, c3, c4
+WHERE core_tag.name LIKE '[%]' -- Notation for entity tags
   AND add_tags.tag_id IS NOT NULL
 
-GROUP BY 1,2
+--GROUP BY 1,2
 )
 
+
+-- This addition to add_entity CTE finds the most common entity for each campaign tag.
 , add_entity2 AS (
 SELECT
   add_entity.tag_id
@@ -77,9 +89,10 @@ JOIN (SELECT add_entity.tag_id, MAX(add_entity.count_entity) AS max_count_entity
       AS subquery
   ON add_entity.tag_id = subquery.tag_id
   AND add_entity.count_entity = subquery.max_count_entity
-)
+)*/
 
 
+-- This CTE: Calculate first and most recent mailer sent in a campaign
 , isolate_dates AS (
 SELECT DISTINCT
   tag_id
@@ -88,6 +101,8 @@ SELECT DISTINCT
 FROM add_tags
 )
 
+
+-- This CTE: Aggregate calculations by tag
 , calc_metrics AS (
 SELECT
 	tag_id
@@ -101,13 +116,17 @@ FROM add_tags
 GROUP BY 1,2,3
 )
 
+
 SELECT 
   calc_metrics.*
   , first_mailer_sent_date
   , most_recent_mailer_sent_date
-  , add_entity2.mailer_entity
+  --, add_entity2.mailer_entity
+  --, add_entity.mailer_entity
 FROM calc_metrics
 LEFT JOIN isolate_dates
   ON calc_metrics.tag_id = isolate_dates.tag_id
-LEFT JOIN add_entity2
+/*LEFT JOIN add_entity2
   ON add_entity2.tag_id = calc_metrics.tag_id
+LEFT JOIN add_entity
+  ON add_entity.campaign_tag_id = calc_metrics.tag_id*/
