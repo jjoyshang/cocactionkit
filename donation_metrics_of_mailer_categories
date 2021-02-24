@@ -53,7 +53,7 @@ SELECT
   , first_one_time_donation_clean AS first_onetime_donation
   , first_recurring_donation_clean AS first_recurring_donation
   , reactivated_former_recurring_clean AS reactivated_former_recurring
-  , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date
+  , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date -- converting field to date data type
   , core_mailing.expected_send_count AS mailing_send_count
 FROM donations
 LEFT JOIN coc_ak.core_mailing
@@ -79,7 +79,7 @@ LEFT JOIN donations_clean
 )
 
 
-/* Code for adding mailer entity is finished. Need input on structure before fully integrating.
+/* Code for adding mailer entity is finished. Want input on structure before fully integrating.
 , add_entity AS (
 SELECT
   tag_categories
