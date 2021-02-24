@@ -80,7 +80,8 @@ LEFT JOIN donations_clean
 )
 
 
-/* Code for adding mailer entity is finished. Want input on structure before fully integrating.
+/* CTEs for associating entity with issue tags. Hiding these CTEs for now. 
+One campaign / issue  will have mailers for multiple entities, which creates duplicates in the final table.
 , add_entity AS (
 SELECT
   tag_categories
