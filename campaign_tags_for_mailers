@@ -19,8 +19,8 @@ LEFT JOIN coc_ak.core_mailing
   
 WHERE clean_source = 'email' -- Including donations from emails only
   AND gift_date >= '2018-01-01'
-  AND core_mailing.status = 'completed'
-  AND mailing_date >= '2018-01-01'
+  --AND core_mailing.status = 'completed'
+ -- AND mailing_date >= '2018-01-01'
 )
 
 
@@ -49,6 +49,39 @@ WHERE core_tag.name LIKE '*%'
   OR core_tag.name LIKE 'CAMP%'
 )
 
+
+ --Code for adding mailer entity is finished. Want input on structure before fully integrating.
+, add_entity AS (
+SELECT
+  add_tags.tag_id
+  , core_tag.name AS mailer_entity
+  , COUNT(core_tag.name) AS count_entity
+FROM add_tags
+LEFT JOIN coc_ak.core_mailing_tags
+  ON core_mailing_tags.mailing_id = add_tags.mailing_id
+LEFT JOIN coc_ak.core_tag
+  ON core_mailing_tags.tag_id = core_tag.id
+
+WHERE core_tag.name LIKE '[%]' -- Notation for entity tags: PAC, c3, c4
+  AND add_tags.tag_id IS NOT NULL
+
+GROUP BY 1,2
+)
+
+, add_entity2 AS (
+SELECT
+  add_entity.tag_id
+  , add_entity.mailer_entity
+FROM add_entity
+JOIN (SELECT add_entity.tag_id, MAX(add_entity.count_entity) AS max_count_entity
+        FROM add_entity
+        GROUP BY add_entity.tag_id) 
+      AS subquery
+  ON add_entity.tag_id = subquery.tag_id
+  AND add_entity.count_entity = subquery.max_count_entity
+)
+
+
 , isolate_dates AS (
 SELECT DISTINCT
   tag_id
@@ -61,18 +94,22 @@ FROM add_tags
 SELECT
 	tag_id
 	, tag_name
+	, tag_type
 	, COUNT(DISTINCT mailing_id) AS number_mailers
   , SUM (mailing_send_count) AS emails_sent_out
 	, COUNT(transaction_id) AS count_donations
 	, SUM(total) AS total_donation_dollars
 FROM add_tags
-GROUP BY 1,2
+GROUP BY 1,2,3
 )
 
 SELECT 
   calc_metrics.*
   , first_mailer_sent_date
   , most_recent_mailer_sent_date
+  , add_entity2.mailer_entity
 FROM calc_metrics
 LEFT JOIN isolate_dates
   ON calc_metrics.tag_id = isolate_dates.tag_id
+LEFT JOIN add_entity2
+  ON add_entity2.tag_id = calc_metrics.tag_id
