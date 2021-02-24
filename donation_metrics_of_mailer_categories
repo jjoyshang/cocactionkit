@@ -61,6 +61,7 @@ LEFT JOIN coc_ak.core_mailing
   
 WHERE transaction_dupe = 1
   AND core_mailing.status = 'completed'
+  AND mailing_date >= '2018-01-01' -- Adding filter to keep consistent with other calculations. However, there are mailers sent before 2018 that got recurring donations after.
 )
 
 
