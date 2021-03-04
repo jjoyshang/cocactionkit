@@ -305,16 +305,16 @@ SELECT *
 FROM all_segments
 )
 
---, combine AS (
+, combine AS (
 SELECT issue_flags.*
   , donor_segment
 FROM issue_flags
 LEFT JOIN dedup_users ON issue_flags.user_id = dedup_users.user_id
 WHERE best_segment = 1
---)
+)
 
 
-/*, coverage_flags AS ( 
+--, coverage_flags AS ( 
 SELECT
   COUNT(anti_trump_flag)*100/COUNT(user_id) AS anti_trump_coverage
   , COUNT(census_flag)*100/COUNT(user_id) AS census_coverage
@@ -335,8 +335,9 @@ SELECT
   , COUNT(tech_accountability_flag)*100/COUNT(user_id) AS tech_accountability_coverage
   , COUNT(voting_rights_flag)*100/COUNT(user_id) AS voting_rights_coverage
   , COUNT(white_supremacy_flag)*100/COUNT(user_id) AS white_supremacy_coverage
-FROM issue_flags
-)*/
+FROM combine
+--WHERE donor_segment = 'Lapsed One-Time'
+--)
 
 /* -- For collective coverage of donor pool
 SELECT
