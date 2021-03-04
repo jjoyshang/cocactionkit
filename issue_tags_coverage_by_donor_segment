@@ -1,4 +1,4 @@
-/*WITH donations AS (
+WITH donations AS (
 SELECT DISTINCT
 	transaction_id
   , user_id
@@ -100,7 +100,7 @@ SELECT
   , CASE WHEN tag_categories = '*WHITE SUPREMACY' THEN 1 ELSE NULL END AS white_supremacy
   
 FROM base
---WHERE user_id IS NOT NULL
+WHERE user_id IS NOT NULL
 )
 
 , sum_by_issue AS (
@@ -153,12 +153,11 @@ SELECT
   , CASE WHEN voting_rights_count IS NOT NULL THEN 1 ELSE NULL END AS voting_rights_flag
   , CASE WHEN white_supremacy_count IS NOT NULL THEN 1 ELSE NULL END AS white_supremacy_flag
 FROM sum_by_issue
-)*/
+)
 
 
--- This group of CTE's for creating a new field with the donor segment
---, 
-WITH appeal_segment AS (
+-- This group of CTE's for creating a new field with the donor segment, 
+, appeal_segment AS (
 SELECT t1.user_id
   , CASE WHEN t1.user_id IS NOT NULL THEN 'Appeal' END AS donor_segment
 FROM
@@ -292,10 +291,27 @@ UNION ALL
 SELECT * FROM sustainers_segment
 )
 
+, dedup_users AS (
 SELECT *
+  , CASE 
+      WHEN donor_segment = 'Sustainers' THEN 1
+      WHEN donor_segment = 'Recently Lapsed Sustainers' THEN 2
+      WHEN donor_segment = 'Appeal' THEN 3
+      WHEN donor_segment = 'Renewal' THEN 4
+      WHEN donor_segment = 'Lapsed Recurring' THEN 5
+      WHEN donor_segment = 'Lapsed One-Time' THEN 6
+    END AS segment_rank
+  , ROW_NUMBER () OVER (PARTITION BY user_id ORDER BY segment_rank ASC) AS best_segment
 FROM all_segments
-LEFT JOIN (SELECT user_id, COUNT(user_id) AS count_id FROM all_segments GROUP BY 1) AS temp
-  ON temp.user_id = all_segments.user_id
+)
+
+--, combine AS (
+SELECT issue_flags.*
+  , donor_segment
+FROM issue_flags
+LEFT JOIN dedup_users ON issue_flags.user_id = dedup_users.user_id
+WHERE best_segment = 1
+--)
 
 
 /*, coverage_flags AS ( 
