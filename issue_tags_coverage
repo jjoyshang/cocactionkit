@@ -1,0 +1,198 @@
+WITH donations AS (
+SELECT DISTINCT
+	transaction_id
+  , user_id
+  , mailing_id
+  , gift_date
+  , total
+-- Below fields needed to be transformed for the ROW NUMBER function to work correctly.
+  , CASE WHEN recurring = '0' THEN NULL ELSE recurring END AS recurring_clean
+  , CASE WHEN first_donation = '0' THEN NULL ELSE first_donation END AS first_donation_clean
+  , CASE WHEN first_one_time_donation = '0' THEN NULL ELSE first_one_time_donation END AS first_one_time_donation_clean
+  , CASE WHEN first_recurring_donation = '0' THEN NULL ELSE first_recurring_donation END AS first_recurring_donation_clean
+  , CASE WHEN reactivated_former_recurring = '0' THEN NULL ELSE reactivated_former_recurring END AS reactivated_former_recurring_clean
+
+  , ROW_NUMBER () OVER (PARTITION BY transaction_id ORDER BY recurring_clean, first_donation_clean, first_one_time_donation_clean, first_recurring_donation_clean, reactivated_former_recurring_clean DESC NULLS LAST) AS transaction_dupe
+      -- ^For deduping. I'm seeing that one transaction will have multiple records, one with a flag for these donation types and one without.
+
+FROM coc_reporting.donation_base_20210202
+WHERE clean_source = 'email' -- Including donations from emails only
+  AND gift_date >= '2018-01-01'
+)
+
+, donations_clean AS (
+SELECT
+  transaction_id
+  , user_id
+  , mailing_id
+  , gift_date
+  , total
+/*  , recurring_clean AS recurring
+  , first_donation_clean AS first_donation
+  , first_one_time_donation_clean AS first_onetime_donation
+  , first_recurring_donation_clean AS first_recurring_donation
+  , reactivated_former_recurring_clean AS reactivated_former_recurring */
+FROM donations
+WHERE transaction_dupe = 1
+)
+
+, base AS (
+SELECT
+	donations_clean.*
+  , category_tags.*
+
+FROM coc_reporting.ak_topdonationmailers_20182020_categories AS category_tags
+  -- ^Starting with this table since it has all the campaign category tags that I want to work with. These campaigns tags are much fewer than the total amount from core_mailing_tags.
+INNER JOIN coc_ak.core_mailing_tags
+  ON core_mailing_tags.tag_id = category_tags.tag_id
+INNER JOIN donations_clean
+	ON donations_clean.mailing_id = core_mailing_tags.mailing_id
+)
+
+
+-- In v2 combining tags. Hiding tags that are fully encompassed by a larger group.
+, flag_tags AS (
+SELECT
+	user_id
+  , CASE WHEN tag_categories = '*ANTI-TRUMP' THEN 1 ELSE NULL END AS anti_trump
+  , CASE WHEN tag_categories = '*CENSUS' THEN 1 ELSE NULL END AS census
+  , CASE 
+      WHEN tag_categories = '*CHILDREN' THEN 1 
+      WHEN tag_categories = '*FAMILIES' THEN 1
+    ELSE NULL END AS children_families
+  , CASE WHEN tag_categories = '*CORONAVIRUS' THEN 1 ELSE NULL END AS coronavirus
+  , CASE WHEN tag_categories = '*CORPORATE ACCOUNTABILITY' THEN 1 ELSE NULL END AS corporate_accountability
+  , CASE WHEN tag_categories = '*CRIMINAL JUSTICE' THEN 1 ELSE NULL END AS criminal_justice
+  , CASE 
+      WHEN tag_categories = '*ECONOMIC JUSTICE' THEN 1 
+      --WHEN tag_categories = '*MINIMUM WAGE' THEN 1 
+    ELSE NULL END AS econ_justice
+  , CASE 
+      WHEN tag_categories = '*EDUCATION' THEN 1 
+     -- WHEN tag_categories = '*ANTI-BLACK SCHOOL ADMINISTRATION' THEN 1
+      WHEN tag_categories = '*COLLEGE STUDENTS' THEN 1 
+      --WHEN tag_categories = '*SCHOOLS' THEN 1
+      ELSE NULL END AS education_accountability
+  , CASE WHEN tag_categories = '*ELECTIONS' THEN 1 ELSE NULL END AS elections
+  , CASE WHEN tag_categories = '*ENDORSEMENT' THEN 1 ELSE NULL END AS endorsement
+  , CASE 
+      WHEN tag_categories = '*ENVIRONMENTAL JUSTICE' THEN 1
+      WHEN tag_categories = '*ENERGY POVERTY' THEN 1
+      --WHEN tag_categories = '*FLINT MI' THEN 1
+    ELSE NULL END AS env_justice
+  , CASE 
+      WHEN tag_categories = '*HEALTH JUSTICE' THEN 1 
+      --WHEN tag_categories = '*MENTAL HEALTH' THEN 1 
+      WHEN tag_categories = '*REPRODUCTIVE JUSTICE' THEN 1 
+    ELSE NULL END AS health_justice
+  , CASE WHEN tag_categories = '*HISTORICAL ANNIVERSARY' THEN 1 ELSE NULL END AS historical_anniversary
+--  , CASE WHEN tag_categories = '*IN PERSON EVENT' THEN 1 ELSE NULL END AS in_person_event
+  , CASE WHEN tag_categories = '*MEDIA ACCOUNTABILITY' THEN 1 ELSE NULL END AS media_accountability
+  , CASE WHEN tag_categories = '*MOTHERS' THEN 1 ELSE NULL END AS mothers
+  , CASE WHEN tag_categories = '*POLICE ACCOUNTABILITY' THEN 1 ELSE NULL END AS police_accountability
+--  , CASE WHEN tag_categories = '*SURVEILLANCE' THEN 1 ELSE NULL END AS surveillance
+  , CASE 
+      WHEN tag_categories = '*TECH ACCOUNTABILITY / DIGITAL JUSTICE' THEN 1 
+      WHEN tag_categories = '*DISINFORMATION' THEN 1
+    ELSE NULL END AS tech_accountability
+--  , CASE WHEN tag_categories = '*TRAGEDY EVENT' THEN 1 ELSE NULL END AS tragedy_events
+  , CASE WHEN tag_categories = '*VOTING RIGHTS' THEN 1 ELSE NULL END AS voting_rights
+  , CASE WHEN tag_categories = '*WHITE SUPREMACY' THEN 1 ELSE NULL END AS white_supremacy
+  
+FROM base
+--WHERE user_id IS NOT NULL
+)
+
+, sum_by_issue AS (
+SELECT
+  user_id
+  , SUM(anti_trump) AS anti_trump_count
+  , SUM(census) AS census_count
+  , SUM(children_families) AS children_families_count
+  , SUM(coronavirus) AS coronavirus_count
+  , SUM(corporate_accountability) AS corporate_accountability_count
+  , SUM(criminal_justice) AS criminal_justice_count
+  , SUM(econ_justice) AS econ_justice_count
+  , SUM(education_accountability) AS education_accountability_count
+  , SUM(elections) AS elections_count
+  , SUM(endorsement) AS endorsement_count
+  , SUM(env_justice) AS env_justice_count
+  , SUM(health_justice) AS health_justice_count
+  , SUM(historical_anniversary) AS historical_anniversary_count
+  , SUM(media_accountability) AS media_accountability_count
+  , SUM(mothers) AS mothers_count
+  , SUM(police_accountability) AS police_accountability_count
+  , SUM(tech_accountability) AS tech_accountability_count
+  , SUM(voting_rights) AS voting_rights_count
+  , SUM(white_supremacy) AS white_supremacy_count
+FROM flag_tags
+GROUP BY 1
+)
+
+
+--, issue_flags AS (
+SELECT
+  user_id
+  , CASE WHEN anti_trump_count IS NOT NULL THEN 1 ELSE NULL END AS anti_trump_flag
+  , CASE WHEN census_count IS NOT NULL THEN 1 ELSE NULL END AS census_flag
+  , CASE WHEN children_families_count IS NOT NULL THEN 1 ELSE NULL END AS children_families_flag
+  , CASE WHEN coronavirus_count IS NOT NULL THEN 1 ELSE NULL END AS coronavirus_flag
+  , CASE WHEN corporate_accountability_count IS NOT NULL THEN 1 ELSE NULL END AS corporate_accountability_flag
+  , CASE WHEN criminal_justice_count IS NOT NULL THEN 1 ELSE NULL END AS criminal_justice_flag
+  , CASE WHEN econ_justice_count IS NOT NULL THEN 1 ELSE NULL END AS econ_justice_flag
+  , CASE WHEN education_accountability_count IS NOT NULL THEN 1 ELSE NULL END AS education_accountability_flag
+  , CASE WHEN elections_count IS NOT NULL THEN 1 ELSE NULL END AS elections_flag
+  , CASE WHEN endorsement_count IS NOT NULL THEN 1 ELSE NULL END AS endorsement_flag
+  , CASE WHEN env_justice_count IS NOT NULL THEN 1 ELSE NULL END AS env_justice_flag
+  , CASE WHEN health_justice_count IS NOT NULL THEN 1 ELSE NULL END AS health_justice_flag
+  , CASE WHEN historical_anniversary_count IS NOT NULL THEN 1 ELSE NULL END AS historical_anniversary_flag
+  , CASE WHEN media_accountability_count IS NOT NULL THEN 1 ELSE NULL END AS media_accountability_flag
+  , CASE WHEN mothers_count IS NOT NULL THEN 1 ELSE NULL END AS mothers_flag
+  , CASE WHEN police_accountability_count IS NOT NULL THEN 1 ELSE NULL END AS police_accountability_flag
+  , CASE WHEN tech_accountability_count IS NOT NULL THEN 1 ELSE NULL END AS tech_accountability_flag
+  , CASE WHEN voting_rights_count IS NOT NULL THEN 1 ELSE NULL END AS voting_rights_flag
+  , CASE WHEN white_supremacy_count IS NOT NULL THEN 1 ELSE NULL END AS white_supremacy_flag
+FROM sum_by_issue
+--)
+
+/*, coverage_flags AS ( 
+SELECT
+  COUNT(anti_trump_flag)*100/COUNT(user_id) AS anti_trump_coverage
+  , COUNT(census_flag)*100/COUNT(user_id) AS census_coverage
+  , COUNT(children_families_flag)*100/COUNT(user_id) AS children_families_coverage
+  , COUNT(coronavirus_flag)*100/COUNT(user_id) AS coronavirus_coverage
+  , COUNT(corporate_accountability_flag)*100/COUNT(user_id) AS corporate_accountability_coverage
+  , COUNT(criminal_justice_flag)*100/COUNT(user_id) AS criminal_justice_coverage
+  , COUNT(econ_justice_flag)*100/COUNT(user_id) AS econ_justice_coverage
+  , COUNT(education_accountability_flag)*100/COUNT(user_id) AS education_accountability_coverage
+  , COUNT(elections_flag)*100/COUNT(user_id) AS elections_coverage
+  , COUNT(endorsement_flag)*100/COUNT(user_id) AS endorsement_coverage
+  , COUNT(env_justice_flag)*100/COUNT(user_id) AS env_justice_coverage
+  , COUNT(health_justice_flag)*100/COUNT(user_id) AS health_justice_coverage
+  , COUNT(historical_anniversary_flag)*100/COUNT(user_id) AS historical_anniversary_coverage
+  , COUNT(media_accountability_flag)*100/COUNT(user_id) AS media_accountability_coverage
+  , COUNT(mothers_flag)*100/COUNT(user_id) AS mothers_coverage
+  , COUNT(police_accountability_flag)*100/COUNT(user_id) AS police_accountability_coverage
+  , COUNT(tech_accountability_flag)*100/COUNT(user_id) AS tech_accountability_coverage
+  , COUNT(voting_rights_flag)*100/COUNT(user_id) AS voting_rights_coverage
+  , COUNT(white_supremacy_flag)*100/COUNT(user_id) AS white_supremacy_coverage
+FROM issue_flags
+)*/
+
+/*SELECT
+  COUNT (top_issues.user_id) *100 / COUNT(issue_flags.user_id)
+FROM issue_flags
+LEFT JOIN 
+    (SELECT user_id FROM issue_flags 
+      WHERE anti_trump_flag IS NOT NULL 
+      OR children_families_flag  IS NOT NULL
+      OR criminal_justice_flag IS NOT NULL
+      OR education_accountability_flag IS NOT NULL
+      OR elections_flag  IS NOT NULL
+      OR endorsement_flag  IS NOT NULL
+      OR media_accountability_flag  IS NOT NULL
+      OR voting_rights_flag  IS NOT NULL
+      OR tech_accountability_flag  IS NOT NULL
+      OR historical_anniversary_flag IS NOT NULL
+    ) AS top_issues
+  ON issue_flags.user_id = top_issues.user_id*/
