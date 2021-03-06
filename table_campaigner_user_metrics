@@ -1,0 +1,115 @@
+WITH base AS (
+  SELECT
+    RIGHT(core_tag.name, CHARINDEX(' ', REVERSE(core_tag.name)) -1) AS campaigner -- format field to remove 'OWNER' from the beginning 
+    , core_mailing.id AS mailing_id
+    , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date
+    , core_usermailing.user_id
+    , core_usermailing.id AS unique_id
+  FROM coc_ak.core_mailing
+  LEFT JOIN coc_ak.core_mailing_tags
+    ON core_mailing.id = core_mailing_tags.mailing_id
+  LEFT JOIN coc_ak.core_tag
+  	ON core_mailing_tags.tag_id = core_tag.id
+  LEFT JOIN coc_ak.core_usermailing
+    ON core_mailing.id = core_usermailing.mailing_id
+  WHERE core_tag.name LIKE 'OWNER %'
+    AND core_mailing.expected_send_count > 0
+    AND core_usermailing.user_id IS NOT NULL -- seeing some mailers that are sent once w/o user id. I'm guessing they're tests
+    AND core_mailing.status = 'completed'
+    
+   AND mailing_date > '2021-01-01' -- Using to narrow down results for run time
+)
+
+, opens AS (
+  SELECT
+    base.user_id
+    , base.mailing_id
+    , base.unique_id
+    , CASE WHEN core_open.user_id IS NOT NULL THEN 1 ELSE NULL END AS open_flag
+    , ROW_NUMBER () OVER (PARTITION BY core_open.user_id, core_open.mailing_id ORDER BY core_open.created_at DESC) AS rank_opens
+  FROM base
+  INNER JOIN coc_ak.core_open
+    ON base.mailing_id = core_open.mailing_id
+    AND base.user_id = core_open.user_id
+)
+
+, clicks AS (
+  SELECT
+    base.user_id
+    , base.mailing_id
+    , base.unique_id
+    , CASE WHEN core_click.user_id IS NOT NULL THEN 1 ELSE NULL END AS click_flag
+    , ROW_NUMBER () OVER (PARTITION BY core_click.user_id, core_click.mailing_id  ORDER BY core_click.created_at DESC) AS rank_clicks
+  FROM base
+  INNER JOIN coc_ak.core_click
+    ON base.mailing_id = core_click.mailing_id
+    AND base.user_id = core_click.user_id
+WHERE base.mailing_id = '49317'
+)
+
+SELECT user_id, COUNT(user_id) FROM clicks 
+WHERE open_flag IS NOT NULL AND rank_opens = 1
+GROUP BY 1 ORDER BY 2 DESC
+
+
+--
+, actions AS (
+  SELECT
+    base.*/*base.user_id
+    , base.mailing_id*/
+    --, CASE WHEN core_click.user_id IS NOT NULL THEN 1 ELSE NULL END AS click_flag
+    --, CASE WHEN core_action.user_id IS NOT NULL THEN 1 ELSE NULL END AS action_flag
+  FROM base
+  LEFT JOIN coc_ak.core_open
+    ON base.mailing_id = core_open.mailing_id
+    AND base.user_id = core_open.user_id
+  /*LEFT JOIN coc_ak.core_click
+    ON base.mailing_id = core_click.mailing_id
+    AND base.user_id = core_click.user_id
+  LEFT JOIN coc_ak.core_action
+    ON base.mailing_id  = core_action.mailing_id
+    AND base.user_id = core_action.user_id
+  LEFT JOIN coc_ak.core_subscriptionhistory AS subhist
+    ON subhist.action_id = core_action.id
+  LEFT JOIN coc_ak.core_subscriptionchangetype AS changes
+    ON changes.id = subhist.change_id
+  WHERE core_action.status = 'completed'
+    AND changes.subscribed != 0 -- Filter to exclude actions that were unsubscribes*/
+)
+
+/*, unsubs AS (
+  SELECT
+    base.user_id
+    , base.mailing_id
+    , CASE WHEN base.user_id IS NOT NULL THEN 1 ELSE NULL END AS unsubscribe_flag
+  FROM coc_ak.core_action as acts
+  JOIN coc_ak.core_subscriptionhistory AS subhist
+    ON subhist.action_id = acts.id
+    AND subhist.list_id = 1 -- Filter for current subscription
+  JOIN coc_ak.core_subscriptionchangetype AS changes
+    ON changes.id = subhist.change_id
+    AND changes.subscribed = 0 -- Filter for unsubs
+  RIGHT JOIN base
+    ON base.mailing_id = acts.mailing_id
+    AND base.user_id = acts.user_id
+)
+
+SELECT
+  base.campaigner
+  , base.mailing_id
+  , base.mailing_date
+  , base.user_id
+  , flags.open_flag
+  , flags.click_flag
+  , flags.action_flag
+  , unsubs.unsubscribe_flag
+FROM base
+!! LEFT JOIN opens
+  ON base.unique_id = opens.unique_id
+  AND rank_opens = 1 -- Deduping by user
+LEFT JOIN clicks
+  ON base.unique_id = clicks.unique_id
+  AND rank_clicks = 1 -- Deduping by user
+LEFT JOIN unsubs
+  ON base.user_id = unsubs.user_id
+  AND base.mailing_id = unsubs.mailing_id*/
