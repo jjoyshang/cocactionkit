@@ -20,7 +20,7 @@ WITH base AS (
    AND mailing_date > '2021-01-01' -- Using to narrow down results for run time
 )
 
-/*, opens AS (
+, opens AS (
   SELECT
     base.user_id
     , base.mailing_id
@@ -55,37 +55,37 @@ WITH base AS (
     , CASE WHEN core_action.user_id IS NOT NULL THEN 1 ELSE NULL END AS action_flag
     , ROW_NUMBER () OVER (PARTITION BY core_action.user_id, core_action.mailing_id  ORDER BY core_action.updated_at DESC) AS rank_actions
   FROM base
- INNER JOIN coc_ak.core_action
+  INNER JOIN coc_ak.core_action
     ON base.mailing_id  = core_action.mailing_id
     AND base.user_id = core_action.user_id
   WHERE core_action.status = 'complete'
     AND NOT EXISTS (  -- this EXISTS clause filters out unsubscribe actions
       SELECT 1
-      FROM coc_ak.core_subscriptionhistory as subhist
-      JOIN coc_ak.core_subscriptionchangetype as changes on changes.id = subhist.change_id
+      FROM coc_ak.core_subscriptionhistory AS subhist
+      JOIN coc_ak.core_subscriptionchangetype AS changes ON changes.id = subhist.change_id
       WHERE core_action.id=subhist.action_id
         AND changes.subscribed = 'f' )
 )
-*/
 
 , unsubs AS (
   SELECT
     base.user_id
     , base.mailing_id
+    , base.unique_id
     , CASE WHEN base.user_id IS NOT NULL THEN 1 ELSE NULL END AS unsubscribe_flag
-  FROM coc_ak.core_action as acts
-  JOIN coc_ak.core_subscriptionhistory AS subhist
-    ON subhist.action_id = acts.id
-    AND subhist.list_id = 1 -- Filter for current subscription
-  JOIN coc_ak.core_subscriptionchangetype AS changes
+    , ROW_NUMBER () OVER (PARTITION BY core_action.user_id, core_action.mailing_id  ORDER BY core_action.updated_at DESC) AS rank_unsubs
+  FROM base
+  INNER JOIN coc_ak.core_action
+    ON base.mailing_id  = core_action.mailing_id
+    AND base.user_id = core_action.user_id
+  INNER JOIN coc_ak.core_subscriptionhistory AS subhist
+    ON subhist.action_id = core_action.id
+  INNER JOIN coc_ak.core_subscriptionchangetype AS changes
     ON changes.id = subhist.change_id
-    AND changes.subscribed = 0 -- Filter for unsubs
-  RIGHT JOIN base
-    ON base.mailing_id = acts.mailing_id
-    AND base.user_id = acts.user_id
+   WHERE changes.subscribed = 'f'
 )
 
-/*
+
 SELECT
   base.campaigner
   , base.mailing_id
@@ -96,7 +96,7 @@ SELECT
   , flags.action_flag
   , unsubs.unsubscribe_flag
 FROM base
-!! LEFT JOIN opens
+LEFT JOIN opens
   ON base.unique_id = opens.unique_id
   AND rank_opens = 1 -- Deduping by user
 LEFT JOIN clicks
@@ -106,5 +106,5 @@ LEFT JOIN actions
   ON base.unique_id = actions.unique_id
   AND rank_actions = 1 -- Deduping by user
 LEFT JOIN unsubs
-  ON base.user_id = unsubs.user_id
-  AND base.mailing_id = unsubs.mailing_id*/
+  ON base.unique_id = unsubs.unique_id
+  AND rank_sunsubs = 1 -- Deduping by user
