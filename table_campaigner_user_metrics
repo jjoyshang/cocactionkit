@@ -1,6 +1,7 @@
 WITH base AS (
   SELECT
-    RIGHT(core_tag.name, CHARINDEX(' ', REVERSE(core_tag.name)) -1) AS campaigner -- format field to remove 'OWNER' from the beginning 
+    RIGHT(core_tag.name, CHARINDEX(' ', REVERSE(core_tag.name)) -1) AS campaigner 
+      -- ^format field to remove 'OWNER' from the beginning 
     , core_mailing.id AS mailing_id
     , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date
     , core_usermailing.user_id
@@ -14,17 +15,17 @@ WITH base AS (
     ON core_mailing.id = core_usermailing.mailing_id
   WHERE core_tag.name LIKE 'OWNER %'
     AND core_mailing.expected_send_count > 0
-    AND core_usermailing.user_id IS NOT NULL -- seeing some mailers that are sent once w/o user id. I'm guessing they're tests
+    AND core_usermailing.user_id IS NOT NULL 
+      -- ^seeing some mailers that are sent once w/o user id. I'm guessing they're tests
     AND core_mailing.status = 'completed'
     
-   AND mailing_date > '2021-01-01' -- Using to narrow down results for run time
+--   AND mailing_date > '2021-01-01' -- Using to narrow down results for run time
 )
 
 , opens AS (
   SELECT
     base.user_id
     , base.mailing_id
-    , base.unique_id
     , CASE WHEN core_open.user_id IS NOT NULL THEN 1 ELSE NULL END AS open_flag
     , ROW_NUMBER () OVER (PARTITION BY core_open.user_id, core_open.mailing_id ORDER BY core_open.created_at DESC) AS rank_opens
   FROM base
@@ -37,7 +38,6 @@ WITH base AS (
   SELECT
     base.user_id
     , base.mailing_id
-    , base.unique_id
     , CASE WHEN core_click.user_id IS NOT NULL THEN 1 ELSE NULL END AS click_flag
     , ROW_NUMBER () OVER (PARTITION BY core_click.user_id, core_click.mailing_id  ORDER BY core_click.created_at DESC) AS rank_clicks
   FROM base
@@ -51,7 +51,6 @@ WITH base AS (
   SELECT
     base.user_id
     , base.mailing_id
-    , base.unique_id
     , CASE WHEN core_action.user_id IS NOT NULL THEN 1 ELSE NULL END AS action_flag
     , ROW_NUMBER () OVER (PARTITION BY core_action.user_id, core_action.mailing_id  ORDER BY core_action.updated_at DESC) AS rank_actions
   FROM base
@@ -71,7 +70,6 @@ WITH base AS (
   SELECT
     base.user_id
     , base.mailing_id
-    , base.unique_id
     , CASE WHEN base.user_id IS NOT NULL THEN 1 ELSE NULL END AS unsubscribe_flag
     , ROW_NUMBER () OVER (PARTITION BY core_action.user_id, core_action.mailing_id  ORDER BY core_action.updated_at DESC) AS rank_unsubs
   FROM base
@@ -91,20 +89,30 @@ SELECT
   , base.mailing_id
   , base.mailing_date
   , base.user_id
-  , flags.open_flag
-  , flags.click_flag
-  , flags.action_flag
+  , opens.open_flag
+  , clicks.click_flag
+  , actions.action_flag
   , unsubs.unsubscribe_flag
 FROM base
 LEFT JOIN opens
-  ON base.unique_id = opens.unique_id
+  ON base.mailing_id = opens.mailing_id
+  AND base.user_id = opens.user_id
   AND rank_opens = 1 -- Deduping by user
 LEFT JOIN clicks
-  ON base.unique_id = clicks.unique_id
+  ON base.mailing_id = clicks.mailing_id
+  AND base.user_id = clicks.user_id
   AND rank_clicks = 1 -- Deduping by user
 LEFT JOIN actions
-  ON base.unique_id = actions.unique_id
+  ON base.mailing_id = actions.mailing_id
+  AND base.user_id = actions.user_id
   AND rank_actions = 1 -- Deduping by user
 LEFT JOIN unsubs
-  ON base.unique_id = unsubs.unique_id
-  AND rank_sunsubs = 1 -- Deduping by user
+  ON base.mailing_id = unsubs.mailing_id
+  AND base.user_id = unsubs.user_id
+  AND rank_unsubs = 1 -- Deduping by user
+
+WHERE base.mailing_id = '49317'
+/* Using to narrow runtime
+WHERE mailing_date < '2021-03-01'
+ORDER BY base.mailing_date DESC
+LIMIT 10000*/
