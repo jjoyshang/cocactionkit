@@ -20,7 +20,7 @@ WITH base AS (
    AND mailing_date > '2021-01-01' -- Using to narrow down results for run time
 )
 
-, opens AS (
+/*, opens AS (
   SELECT
     base.user_id
     , base.mailing_id
@@ -44,40 +44,31 @@ WITH base AS (
   INNER JOIN coc_ak.core_click
     ON base.mailing_id = core_click.mailing_id
     AND base.user_id = core_click.user_id
-WHERE base.mailing_id = '49317'
 )
 
-SELECT user_id, COUNT(user_id) FROM clicks 
-WHERE open_flag IS NOT NULL AND rank_opens = 1
-GROUP BY 1 ORDER BY 2 DESC
 
-
---
 , actions AS (
   SELECT
-    base.*/*base.user_id
-    , base.mailing_id*/
-    --, CASE WHEN core_click.user_id IS NOT NULL THEN 1 ELSE NULL END AS click_flag
-    --, CASE WHEN core_action.user_id IS NOT NULL THEN 1 ELSE NULL END AS action_flag
+    base.user_id
+    , base.mailing_id
+    , base.unique_id
+    , CASE WHEN core_action.user_id IS NOT NULL THEN 1 ELSE NULL END AS action_flag
+    , ROW_NUMBER () OVER (PARTITION BY core_action.user_id, core_action.mailing_id  ORDER BY core_action.updated_at DESC) AS rank_actions
   FROM base
-  LEFT JOIN coc_ak.core_open
-    ON base.mailing_id = core_open.mailing_id
-    AND base.user_id = core_open.user_id
-  /*LEFT JOIN coc_ak.core_click
-    ON base.mailing_id = core_click.mailing_id
-    AND base.user_id = core_click.user_id
-  LEFT JOIN coc_ak.core_action
+ INNER JOIN coc_ak.core_action
     ON base.mailing_id  = core_action.mailing_id
     AND base.user_id = core_action.user_id
-  LEFT JOIN coc_ak.core_subscriptionhistory AS subhist
-    ON subhist.action_id = core_action.id
-  LEFT JOIN coc_ak.core_subscriptionchangetype AS changes
-    ON changes.id = subhist.change_id
-  WHERE core_action.status = 'completed'
-    AND changes.subscribed != 0 -- Filter to exclude actions that were unsubscribes*/
+  WHERE core_action.status = 'complete'
+    AND NOT EXISTS (  -- this EXISTS clause filters out unsubscribe actions
+      SELECT 1
+      FROM coc_ak.core_subscriptionhistory as subhist
+      JOIN coc_ak.core_subscriptionchangetype as changes on changes.id = subhist.change_id
+      WHERE core_action.id=subhist.action_id
+        AND changes.subscribed = 'f' )
 )
+*/
 
-/*, unsubs AS (
+, unsubs AS (
   SELECT
     base.user_id
     , base.mailing_id
@@ -94,6 +85,7 @@ GROUP BY 1 ORDER BY 2 DESC
     AND base.user_id = acts.user_id
 )
 
+/*
 SELECT
   base.campaigner
   , base.mailing_id
@@ -110,6 +102,9 @@ FROM base
 LEFT JOIN clicks
   ON base.unique_id = clicks.unique_id
   AND rank_clicks = 1 -- Deduping by user
+LEFT JOIN actions
+  ON base.unique_id = actions.unique_id
+  AND rank_actions = 1 -- Deduping by user
 LEFT JOIN unsubs
   ON base.user_id = unsubs.user_id
   AND base.mailing_id = unsubs.mailing_id*/
