@@ -1,6 +1,15 @@
+/*This query creates a table with mailer metrics, with a field identifying the campaigner who sent it.
+For each mailer, it gives a row for each user who received it and whether they opened, clicked, did an action,
+or unsubscribed on that mailer. The resulting table has no duplicate users.
+
+The numbers from this query may be slightly lower than the numbers in ActionKit itself. We suspect this is because Civis
+takes awhile to sync.
+*/
+
+
 WITH base AS (
   SELECT
-    RIGHT(core_tag.name, CHARINDEX(' ', REVERSE(core_tag.name)) -1) AS campaigner 
+    SUBSTRING(core_tag.name, 6, (LEN(core_tag.name) - 6)) AS campaigner -- Hide for now since campaigners aren't tagging consistently
       -- ^format field to remove 'OWNER' from the beginning 
     , core_mailing.id AS mailing_id
     , TO_DATE(core_mailing.send_date, 'YYYY-MM-DD') AS mailing_date
@@ -13,13 +22,14 @@ WITH base AS (
   	ON core_mailing_tags.tag_id = core_tag.id
   LEFT JOIN coc_ak.core_usermailing
     ON core_mailing.id = core_usermailing.mailing_id
-  WHERE core_tag.name LIKE 'OWNER %'
+  WHERE core_tag.name LIKE 'OWNER%' -- In AK, seeing some campaigners are using the format 'Owner...'. Meaning they will not show up in this table.
     AND core_mailing.expected_send_count > 0
     AND core_usermailing.user_id IS NOT NULL 
       -- ^seeing some mailers that are sent once w/o user id. I'm guessing they're tests
     AND core_mailing.status = 'completed'
     
 --   AND mailing_date > '2021-01-01' -- Using to narrow down results for run time
+--AND core_mailing.id = '49317' -- Using to check results by specific mailer
 )
 
 , opens AS (
@@ -44,6 +54,9 @@ WITH base AS (
   INNER JOIN coc_ak.core_click
     ON base.mailing_id = core_click.mailing_id
     AND base.user_id = core_click.user_id
+  LEFT JOIN coc_ak.core_clickurl
+    ON core_click.clickurl_id = core_clickurl.id
+  WHERE core_clickurl.url NOT LIKE '%unsubscribe%' -- Exclude clicks that were to unsubscribe
 )
 
 
@@ -57,13 +70,10 @@ WITH base AS (
   INNER JOIN coc_ak.core_action
     ON base.mailing_id  = core_action.mailing_id
     AND base.user_id = core_action.user_id
-  WHERE core_action.status = 'complete'
-    AND NOT EXISTS (  -- this EXISTS clause filters out unsubscribe actions
-      SELECT 1
-      FROM coc_ak.core_subscriptionhistory AS subhist
-      JOIN coc_ak.core_subscriptionchangetype AS changes ON changes.id = subhist.change_id
-      WHERE core_action.id=subhist.action_id
-        AND changes.subscribed = 'f' )
+  LEFT JOIN coc_ak.core_unsubscribeaction
+    ON core_unsubscribeaction.action_ptr_id = core_action.id
+  WHERE action_ptr_id IS NULL
+    AND core_action.status = 'complete'
 )
 
 , unsubs AS (
@@ -80,7 +90,7 @@ WITH base AS (
     ON subhist.action_id = core_action.id
   INNER JOIN coc_ak.core_subscriptionchangetype AS changes
     ON changes.id = subhist.change_id
-   WHERE changes.subscribed = 'f'
+   WHERE changes.subscribed = 'f' -- filter to only include subscriptionchangetypes that are for Unsubscribing
 )
 
 
@@ -111,7 +121,6 @@ LEFT JOIN unsubs
   AND base.user_id = unsubs.user_id
   AND rank_unsubs = 1 -- Deduping by user
 
-WHERE base.mailing_id = '49317'
 /* Using to narrow runtime
 WHERE mailing_date < '2021-03-01'
 ORDER BY base.mailing_date DESC
