@@ -141,7 +141,7 @@ LEFT JOIN unsubs
 WHERE mailing_date < '2021-03-01'
 ORDER BY base.mailing_date DESC
 LIMIT 10000*/
-
+;
 
 -- Grant access:
 GRANT SELECT ON coc_reporting.ak_mailing_user_metrics TO GROUP coc;
