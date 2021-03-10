@@ -14,7 +14,7 @@ CREATE TABLE coc_reporting.ak_mailing_user_metrics AS
 who recieved that mailing. Use as a base for CTEs below. It does not have duplicates on user_id.*/
 WITH base AS (
   SELECT
-    SUBSTRING(core_tag.name, 6, (LEN(core_tag.name) - 6)) AS campaigner -- Hide for now since campaigners aren't tagging consistently
+    SUBSTRING(core_tag.name, 6, (LEN(core_tag.name) - 5)) AS campaigner
       -- ^format field to remove 'OWNER' from the beginning 
     , core_mailing.id AS mailing_id
     , TO_DATE(core_mailing.finished_at, 'YYYY-MM-DD') AS mailing_date -- finished_at has the best coverage of dates for mailers
