@@ -1,4 +1,4 @@
--- Everyone who has donated one-time
+-- Get every user who has ever made a one-time donation
 WITH one_time_donors AS (
 SELECT DISTINCT
   user_id
@@ -7,16 +7,17 @@ WHERE recurring = 0
 )
 
 
--- They later donated recurring
+-- Of former one-time donors, who has made a first recurring donation? And what mailer did they make that first donation on?
 , first_recurring AS (
 SELECT
-  mailing_id
-  , COUNT(mailing_id) AS count_first_recurring_donors
+  donations.mailing_id
+  , COUNT(one_time_donors.user_id) AS count_first_recurring_donors
 FROM one_time_donors
 INNER JOIN coc_reporting.donation_base_20210226 AS donations
   ON one_time_donors.user_id = donations.user_id
   AND donations.first_recurring_donation = 1
-WHERE clean_source = 'email'
+  AND clean_source = 'email'
+WHERE mailing_id IS NOT NULL
 GROUP BY 1
 )
 
@@ -43,4 +44,5 @@ SELECT
 FROM mailing
 WHERE rank_subject = 1
 
+ORDER BY count_first_recurring_donors DESC
 LIMIT 100
