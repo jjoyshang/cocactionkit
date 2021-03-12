@@ -1,0 +1,46 @@
+-- Everyone who has donated one-time
+WITH one_time_donors AS (
+SELECT DISTINCT
+  user_id
+FROM coc_reporting.donation_base_20210226
+WHERE recurring = 0
+)
+
+
+-- They later donated recurring
+, first_recurring AS (
+SELECT
+  mailing_id
+  , COUNT(mailing_id) AS count_first_recurring_donors
+FROM one_time_donors
+INNER JOIN coc_reporting.donation_base_20210226 AS donations
+  ON one_time_donors.user_id = donations.user_id
+  AND donations.first_recurring_donation = 1
+WHERE clean_source = 'email'
+GROUP BY 1
+)
+
+
+, mailing AS(
+SELECT
+  first_recurring.*
+  , TO_DATE(core_mailing.finished_at, 'YYYY-MM-DD') AS date
+  , core_mailingsubject.text AS subject_line
+  , ROW_NUMBER () OVER (PARTITION BY first_recurring.mailing_id ORDER BY core_mailingsubject.updated_at DESC) AS rank_subject
+FROM first_recurring
+LEFT JOIN coc_ak.core_mailing
+  ON first_recurring.mailing_id = core_mailing.id
+LEFT JOIN coc_ak.core_mailingsubject
+  ON core_mailing.id = core_mailingsubject.mailing_id
+)
+
+
+SELECT
+  mailing_id
+  , count_first_recurring_donors
+  , date
+  , subject_line
+FROM mailing
+WHERE rank_subject = 1
+
+LIMIT 100
