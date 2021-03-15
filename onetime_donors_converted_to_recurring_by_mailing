@@ -3,7 +3,7 @@ WITH one_time_donors AS (
 SELECT DISTINCT
   user_id
 FROM coc_reporting.donation_base_20210226
-WHERE recurring = 0
+WHERE recurring = 0 -- Flag for a donor not being recurring (aka. one-time)
 )
 
 
@@ -15,19 +15,21 @@ SELECT
 FROM one_time_donors
 INNER JOIN coc_reporting.donation_base_20210226 AS donations
   ON one_time_donors.user_id = donations.user_id
-  AND donations.first_recurring_donation = 1
+  AND donations.first_recurring_donation = 1 -- Flag for first recurring fonation
   AND clean_source = 'email'
 WHERE mailing_id IS NOT NULL
 GROUP BY 1
 )
 
 
+-- Join to more information on the mailings
 , mailing AS(
 SELECT
   first_recurring.*
   , TO_DATE(core_mailing.finished_at, 'YYYY-MM-DD') AS date
   , core_mailingsubject.text AS subject_line
   , ROW_NUMBER () OVER (PARTITION BY first_recurring.mailing_id ORDER BY core_mailingsubject.updated_at DESC) AS rank_subject
+    -- ^Field to dedup subject lines by most recent. If not, would have multiple subject lines per mailer.
 FROM first_recurring
 LEFT JOIN coc_ak.core_mailing
   ON first_recurring.mailing_id = core_mailing.id
@@ -36,6 +38,8 @@ LEFT JOIN coc_ak.core_mailingsubject
 )
 
 
+
+-- Select final fields. Dedup subject lines to most recent.
 SELECT
   mailing_id
   , count_first_recurring_donors
@@ -43,6 +47,5 @@ SELECT
   , subject_line
 FROM mailing
 WHERE rank_subject = 1
-
 ORDER BY count_first_recurring_donors DESC
 LIMIT 100
