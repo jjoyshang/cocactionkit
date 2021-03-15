@@ -35,17 +35,39 @@ LEFT JOIN coc_ak.core_mailing
   ON first_recurring.mailing_id = core_mailing.id
 LEFT JOIN coc_ak.core_mailingsubject
   ON core_mailing.id = core_mailingsubject.mailing_id
+) 
+
+
+, tag_list AS (
+SELECT
+  first_recurring.mailing_id
+  , LISTAGG(core_tag.name, ', ') WITHIN GROUP (ORDER BY core_tag.name) AS tags
+FROM first_recurring
+LEFT JOIN coc_ak.core_mailing_tags
+  ON first_recurring.mailing_id = core_mailing_tags.mailing_id
+LEFT JOIN coc_ak.core_tag
+  ON core_mailing_tags.tag_id = core_tag.id
+WHERE core_tag.name LIKE 'CAMP%' 
+  OR core_tag.name LIKE '(%)' 
+  OR core_tag.name LIKE '*%' 
+  OR core_tag.name LIKE '@%' 
+  OR core_tag.name LIKE '[%]' 
+  OR core_tag.name LIKE  '!%'
+GROUP BY 1
 )
 
 
 
 -- Select final fields. Dedup subject lines to most recent.
 SELECT
-  mailing_id
+  mailing.mailing_id
   , count_first_recurring_donors
   , date
   , subject_line
+  , tags
 FROM mailing
+LEFT JOIN tag_list
+  ON mailing.mailing_id = tag_list.mailing_id
 WHERE rank_subject = 1
 ORDER BY count_first_recurring_donors DESC
 LIMIT 100
