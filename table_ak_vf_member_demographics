@@ -211,32 +211,39 @@ SELECT
      	 ELSE NULL
 		 END AS religion_score_number
 
-/*   , ntl_current.vb_vf_party AS political_party
+   , ntl_current.vb_vf_party AS political_party
     
-  , ntl_current.ts_tsmart_partisan_score
-  , ntl_current.ts_tsmart_presidential_general_turnout_score
-  , ntl_current.ts_tsmart_midterm_general_turnout_score
-  , ntl_current.ts_tsmart_presidential_general_enthusiasm_score
-  , ntl_current.ts_tsmart_local_voter_score
-  , ntl_current.ts_tsmart_activist_score
-  , ntl_current.ts_tsmart_trump_defector_score
-  , ntl_current.ts_tsmart_biden_support_score
+  , ntl_current.ts_tsmart_partisan_score AS partisan_score
+  , ntl_current.ts_tsmart_presidential_general_turnout_score AS presidential_general_turnout_score
+  , ntl_current.ts_tsmart_midterm_general_turnout_score AS midterm_general_turnout_score
+  , ntl_current.ts_tsmart_presidential_general_enthusiasm_score AS presidential_general_enthusiasm_score
+  , ntl_current.ts_tsmart_local_voter_score AS local_voter_score
+  , ntl_current.ts_tsmart_activist_score AS activist_score
+  , ntl_current.ts_tsmart_trump_defector_score AS trump_defector_score
+  , ntl_current.ts_tsmart_biden_support_score AS biden_support_score 
   , ntl_current.ts_tsmart_veteran_score AS veteran_score
   	-- ^A higher score indicates a higher likelihood that a person is a military veteran or an active service member.
    , ntl_current.ts_tsmart_gunowner_score AS gunowner_score
   	-- ^A higher score indicates a higher likelihood that a person is a gunowner.
 
-  , ntl_current.predictwise_racial_resentment_score AS racial_resentment_score
+  --, ntl_current.predictwise_racial_resentment_score AS racial_resentment_score
   	-- ^The model was built off questions pertaining to black work ethic, historical discrimination, crime, and black protest. The score ranges from 0-100, with 0 meaning an individual is not at all racially resentful, and 100 meaning an individual is extremely racially resentful.
-    
-  , ntl_current.ts_tsmart_prochoice_score	
-  , ntl_current.ts_tsmart_path_to_citizen_score	
-  , ntl_current.ts_tsmart_climate_change_score	
-  , ntl_current.ts_tsmart_gun_control_score	
-  , ntl_current.ts_tsmart_minimum_wage_score
-  , ntl_current.ts_tsmart_progressive_tax_score
-  , ntl_current.ts_tsmart_labor_union_support_score
-  , ntl_current.predictwise_criminal_justice_reform_score
+  
+  , ntl_current.ts_tsmart_yale_climate_alarmed_score AS climate_alarm_score
+  , ntl_current.ts_tsmart_ideology_score AS liberal_ideology_score
+  , ntl_current.ts_tsmart_ideology_enhanced_score AS liberal_ideology_partisan_score
+  , ntl_current.ts_tsmart_labor_union_support_score AS labor_union_support_score
+  , ntl_current.ts_tsmart_cannabis_legal_support_score AS legal_cannabis_support_score
+  , ntl_current.ts_tsmart_marriage_equality_score AS marriage_equality_score
+  , ntl_current.ts_tsmart_recession_sensitivity_score AS recession_sensitivity_score
+  , ntl_current.ts_tsmart_prochoice_score	 AS prochoice_score
+  , ntl_current.ts_tsmart_path_to_citizen_score	AS path_to_citizen_score
+  , ntl_current.ts_tsmart_climate_change_score AS climate_change_score
+  , ntl_current.ts_tsmart_gun_control_score	AS gun_control_score
+  , ntl_current.ts_tsmart_minimum_wage_score AS minimum_wage_score
+  , ntl_current.ts_tsmart_progressive_tax_score AS progressive_tax_score
+  
+  /*, ntl_current.predictwise_criminal_justice_reform_score
   , ntl_current.predictwise_economic_populism_score
   , ntl_current.predictwise_environmentalism_score
   , ntl_current.predictwise_guns_score
@@ -246,7 +253,8 @@ SELECT
   , ntl_current.predictwise_income_inequality_score
   , ntl_current.predictwise_military_score
   , ntl_current.predictwise_populism_score
-  , ntl_current.predictwise_regulation_score
+  , ntl_current.predictwise_regulation_score*/
+  
 
    , ntl_current.vb_purely_social_networker_demi_decile AS purely_social_network_score
   	-- ^Such as Facebook. 1 represents those most likely and 20 represents those least likely.
@@ -254,7 +262,6 @@ SELECT
   	-- ^Such as Twitter. 1 represents those most likely and 20 represents those least likely.
   , ntl_current.vb_professional_social_networker_demi_decile AS professional_social_network_score
   	-- ^Such as LinkedIn. 1 represents those most likely and 20 represents those least likely.
-*/
 
 FROM ak_tmc_join
 LEFT JOIN ts.ntl_current
