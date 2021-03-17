@@ -6,8 +6,8 @@ The numbers from this query may be slightly lower than the numbers in ActionKit 
 takes awhile to sync.
 */
 
-DROP TABLE IF EXISTS coc_reporting.ak_mailing_user_metrics;
-CREATE TABLE coc_reporting.ak_mailing_user_metrics AS
+DROP TABLE IF EXISTS coc_reporting.ak_mailing_user_metrics_2020;
+CREATE TABLE coc_reporting.ak_mailing_user_metrics_2020 AS
 
 
 /*From core_mailing and related tables, get a CTE with all mailings a campaigner has sent and the user_id of every person
@@ -34,8 +34,7 @@ WITH base AS (
     AND core_usermailing.user_id IS NOT NULL 
       -- ^seeing some mailers that are sent once w/o user id. I'm guessing they're tests
     AND core_mailing.status = 'completed'
-    
---   AND mailing_date > '2021-01-01' -- Using to narrow down results for run time
+    AND mailing_date >= '2020-01-01' -- Using to narrow down results to be manageable in Sisense Yellow
 --AND core_mailing.id = '48819' -- Using to check results by specific mailer
 )
 
@@ -119,6 +118,14 @@ SELECT
   , clicks.click_flag
   , actions.action_flag
   , unsubs.unsubscribe_flag
+  , CASE WHEN unsubs.unsubscribe_flag = 1 THEN 'Unsub' 
+      WHEN opens.open_flag = 1 THEN 'Open'
+      WHEN clicks.click_flag = 1 THEN 'Click'
+      WHEN actions.action_flag = 1 THEN 'Action'
+      ELSE NULL
+    END AS combine_user_flag
+      /* ^ Adding a field with the most relevant flag of each user by mailer. Sisense Yellow does not work well with using
+      multiple fields for details. */
 FROM base
 LEFT JOIN opens
   ON base.mailing_id = opens.mailing_id
@@ -144,5 +151,5 @@ LIMIT 10000*/
 ;
 
 -- Grant access:
-GRANT SELECT ON coc_reporting.ak_mailing_user_metrics TO GROUP coc;
-GRANT ALL ON coc_reporting.ak_mailing_user_metrics TO jharris1;
+GRANT SELECT ON coc_reporting.ak_mailing_user_metrics_2020 TO GROUP coc;
+GRANT ALL ON coc_reporting.ak_mailing_user_metrics_2020 TO jharris1;
