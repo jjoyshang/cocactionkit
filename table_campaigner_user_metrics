@@ -110,9 +110,9 @@ SELECT
 
 SELECT
   base.campaigner
-  , base.mailing_id
+  , base.mailing_id::varchar
   , base.mailing_date
-  , base.user_id
+  , base.user_id::varchar
   , base.subscription_status
   , opens.open_flag
   , clicks.click_flag
