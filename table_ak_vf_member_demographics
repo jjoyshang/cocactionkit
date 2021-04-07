@@ -19,7 +19,7 @@ SELECT
   , core_user.email AS ak_email
   , subscription_status AS ak_sub_status-- include to filter by 'subscribed', 'unsubscribed', 'bounced' and 'never'.
 -- Including location fields here as a backup, since not all ak_userids match to a person_id. Will be combined with Activist Pool location fields in final select.
-  , city AS ak_city
+  , UPPER(city) AS ak_city
   , state AS ak_state
   , zip AS ak_zip
   , COUNT(core_action.id) AS ak_count_actions -- Count the number of actions. Not the most useful metric since so many things count as an action.
@@ -116,6 +116,21 @@ SELECT
   			WHEN ntl_current.vb_household_income_amount >= 2500 THEN '> $2,500,000'::varchar
   			ELSE ntl_current.vb_household_income_amount::varchar
   	END AS household_income_buckets
+  , CASE
+        WHEN household_income_buckets = '< $25,000' THEN '< $25k'
+        WHEN household_income_buckets = '$25,000 - $49,999' THEN '$25-49k'
+        WHEN household_income_buckets = '$50,000 - $74,999' THEN '$50-74k'
+        WHEN household_income_buckets = '$75,000 - $99,999' THEN '$75-99k'
+        WHEN household_income_buckets = '$100,000 - $149,999' THEN '$100-149k'
+        WHEN household_income_buckets = '$150,000 - $199,999' THEN '$150-199k'
+        WHEN household_income_buckets = '$200,000 - $249,999' THEN '$200-499k'
+        WHEN household_income_buckets = '$250,000 - $499,999' THEN '$200-499k'
+        WHEN household_income_buckets = '$500,000 - $749,999' THEN '$500k+'
+        WHEN household_income_buckets = '$750,000 - $999,999' THEN '$500k+'
+        WHEN household_income_buckets = '$1,000,000 - $2,499,999' THEN '$500k+'
+        WHEN household_income_buckets = '> $2,500,000' THEN '$500k+'
+        ELSE household_income_buckets
+    END AS household_income_clean
   , CASE
       	WHEN ntl_current.vb_household_net_worth = 'A' THEN '< $25,000'
       	WHEN ntl_current.vb_household_net_worth = 'B' THEN '$25,000 - $49,999'
@@ -225,23 +240,143 @@ SELECT
   	-- ^A higher score indicates a higher likelihood that a person is a military veteran or an active service member.
    , ntl_current.ts_tsmart_gunowner_score AS gunowner_score
   	-- ^A higher score indicates a higher likelihood that a person is a gunowner.
+  , ntl_current.ts_tsmart_working_class_score AS working_class_score
+  , CASE
+      WHEN working_class_score >= 0 and working_class_score <= 10 THEN 10
+      WHEN working_class_score > 10 and working_class_score <= 20  THEN 20
+      WHEN working_class_score > 20 and working_class_score <= 30  THEN 30
+      WHEN working_class_score > 30 and working_class_score <= 40  THEN 40
+      WHEN working_class_score > 40 and working_class_score <= 50  THEN 50
+      WHEN working_class_score > 50 and working_class_score <= 60  THEN 60
+      WHEN working_class_score > 60 and working_class_score <= 70  THEN 70
+      WHEN working_class_score > 70 and working_class_score<= 80  THEN 80
+      WHEN working_class_score > 80 and working_class_score <= 90  THEN 90
+      WHEN working_class_score > 90 and working_class_score <= 100  THEN 100
+    ELSE NULL
+    END AS working_class_score_clean
 
   --, ntl_current.predictwise_racial_resentment_score AS racial_resentment_score
   	-- ^The model was built off questions pertaining to black work ethic, historical discrimination, crime, and black protest. The score ranges from 0-100, with 0 meaning an individual is not at all racially resentful, and 100 meaning an individual is extremely racially resentful.
   
   , ntl_current.ts_tsmart_yale_climate_alarmed_score AS climate_alarm_score
+  , CASE
+      WHEN climate_alarm_score >= 0 and climate_alarm_score <= 10 THEN 10
+      WHEN climate_alarm_score > 10 and climate_alarm_score <= 20  THEN 20
+      WHEN climate_alarm_score > 20 and climate_alarm_score <= 30  THEN 30
+      WHEN climate_alarm_score > 30 and climate_alarm_score <= 40  THEN 40
+      WHEN climate_alarm_score > 40 and climate_alarm_score <= 50  THEN 50
+      WHEN climate_alarm_score > 50 and climate_alarm_score <= 60  THEN 60
+      WHEN climate_alarm_score > 60 and climate_alarm_score <= 70  THEN 70
+      WHEN climate_alarm_score > 70 and climate_alarm_score <= 80  THEN 80
+      WHEN climate_alarm_score > 80 and climate_alarm_score <= 90  THEN 90
+      WHEN climate_alarm_score > 90 and climate_alarm_score <= 100  THEN 100
+    ELSE NULL
+    END AS climate_alarm_score_clean
   , ntl_current.ts_tsmart_ideology_score AS liberal_ideology_score
   , ntl_current.ts_tsmart_ideology_enhanced_score AS liberal_ideology_partisan_score
+  , CASE
+      WHEN liberal_ideology_partisan_score >= 0 and liberal_ideology_partisan_score <= 10 THEN 10
+      WHEN liberal_ideology_partisan_score > 10 and liberal_ideology_partisan_score <= 20  THEN 20
+      WHEN liberal_ideology_partisan_score > 20 and liberal_ideology_partisan_score <= 30  THEN 30
+      WHEN liberal_ideology_partisan_score > 30 and liberal_ideology_partisan_score <= 40  THEN 40
+      WHEN liberal_ideology_partisan_score > 40 and liberal_ideology_partisan_score <= 50  THEN 50
+      WHEN liberal_ideology_partisan_score > 50 and liberal_ideology_partisan_score <= 60  THEN 60
+      WHEN liberal_ideology_partisan_score > 60 and liberal_ideology_partisan_score <= 70  THEN 70
+      WHEN liberal_ideology_partisan_score > 70 and liberal_ideology_partisan_score <= 80  THEN 80
+      WHEN liberal_ideology_partisan_score > 80 and liberal_ideology_partisan_score <= 90  THEN 90
+      WHEN liberal_ideology_partisan_score > 90 and liberal_ideology_partisan_score <= 100  THEN 100
+    ELSE NULL
+    END AS liberal_idealogy_partisan_score_clean
   , ntl_current.ts_tsmart_labor_union_support_score AS labor_union_support_score
   , ntl_current.ts_tsmart_cannabis_legal_support_score AS legal_cannabis_support_score
+  , CASE
+      WHEN legal_cannabis_support_score >= 0 and legal_cannabis_support_score <= 10 THEN 10
+      WHEN legal_cannabis_support_score > 10 and legal_cannabis_support_score <= 20  THEN 20
+      WHEN legal_cannabis_support_score > 20 and legal_cannabis_support_score <= 30  THEN 30
+      WHEN legal_cannabis_support_score > 30 and legal_cannabis_support_score <= 40  THEN 40
+      WHEN legal_cannabis_support_score > 40 and legal_cannabis_support_score <= 50  THEN 50
+      WHEN legal_cannabis_support_score > 50 and legal_cannabis_support_score <= 60  THEN 60
+      WHEN legal_cannabis_support_score > 60 and legal_cannabis_support_score <= 70  THEN 70
+      WHEN legal_cannabis_support_score > 70 and legal_cannabis_support_score <= 80  THEN 80
+      WHEN legal_cannabis_support_score > 80 and legal_cannabis_support_score <= 90  THEN 90
+      WHEN legal_cannabis_support_score > 90 and legal_cannabis_support_score <= 100  THEN 100
+    ELSE NULL
+    END AS legal_cannabis_support_score_clean
   , ntl_current.ts_tsmart_marriage_equality_score AS marriage_equality_score
+  , CASE
+      WHEN marriage_equality_score >= 0 and marriage_equality_score <= 10 THEN 10
+      WHEN marriage_equality_score > 10 and marriage_equality_score <= 20  THEN 20
+      WHEN marriage_equality_score > 20 and marriage_equality_score <= 30  THEN 30
+      WHEN marriage_equality_score > 30 and marriage_equality_score <= 40  THEN 40
+      WHEN marriage_equality_score > 40 and marriage_equality_score <= 50  THEN 50
+      WHEN marriage_equality_score > 50 and marriage_equality_score <= 60  THEN 60
+      WHEN marriage_equality_score > 60 and marriage_equality_score <= 70  THEN 70
+      WHEN marriage_equality_score > 70 and marriage_equality_score <= 80  THEN 80
+      WHEN marriage_equality_score > 80 and marriage_equality_score <= 90  THEN 90
+      WHEN marriage_equality_score > 90 and marriage_equality_score <= 100  THEN 100
+    ELSE NULL marriage_equality_score_clean
+    END AS
   , ntl_current.ts_tsmart_recession_sensitivity_score AS recession_sensitivity_score
+  , CASE
+      WHEN recession_sensitivity_score >= 0 and recession_sensitivity_score <= 10 THEN 10
+      WHEN recession_sensitivity_score > 10 and recession_sensitivity_score <= 20  THEN 20
+      WHEN recession_sensitivity_score > 20 and recession_sensitivity_score <= 30  THEN 30
+      WHEN recession_sensitivity_score > 30 and recession_sensitivity_score <= 40  THEN 40
+      WHEN recession_sensitivity_score > 40 and recession_sensitivity_score <= 50  THEN 50
+      WHEN recession_sensitivity_score > 50 and recession_sensitivity_score <= 60  THEN 60
+      WHEN recession_sensitivity_score > 60 and recession_sensitivity_score <= 70  THEN 70
+      WHEN recession_sensitivity_score > 70 and recession_sensitivity_score <= 80  THEN 80
+      WHEN recession_sensitivity_score > 80 and recession_sensitivity_score <= 90  THEN 90
+      WHEN recession_sensitivity_score > 90 and recession_sensitivity_score <= 100  THEN 100
+    ELSE NULL
+    END AS recession_sensitivity_score_clean
   , ntl_current.ts_tsmart_prochoice_score	 AS prochoice_score
+  , CASE
+      WHEN prochoice_score >= 0 and prochoice_score <= 10 THEN 10
+      WHEN prochoice_score > 10 and prochoice_score <= 20  THEN 20
+      WHEN prochoice_score > 20 and prochoice_score <= 30  THEN 30
+      WHEN prochoice_score > 30 and prochoice_score <= 40  THEN 40
+      WHEN prochoice_score > 40 and prochoice_score <= 50  THEN 50
+      WHEN prochoice_score > 50 and prochoice_score <= 60  THEN 60
+      WHEN prochoice_score > 60 and prochoice_score <= 70  THEN 70
+      WHEN prochoice_score > 70 and prochoice_score <= 80  THEN 80
+      WHEN prochoice_score > 80 and prochoice_score <= 90  THEN 90
+      WHEN prochoice_score > 90 and prochoice_score <= 100  THEN 100
+    ELSE NULL
+    END AS prochoice_score_clean
   , ntl_current.ts_tsmart_path_to_citizen_score	AS path_to_citizen_score
   , ntl_current.ts_tsmart_climate_change_score AS climate_change_score
   , ntl_current.ts_tsmart_gun_control_score	AS gun_control_score
   , ntl_current.ts_tsmart_minimum_wage_score AS minimum_wage_score
   , ntl_current.ts_tsmart_progressive_tax_score AS progressive_tax_score
+  , CASE
+      WHEN progressive_tax_score >= 0 and progressive_tax_score <= 10 THEN 10
+      WHEN progressive_tax_score > 10 and progressive_tax_score <= 20  THEN 20
+      WHEN progressive_tax_score > 20 and progressive_tax_score <= 30  THEN 30
+      WHEN progressive_tax_score > 30 and progressive_tax_score <= 40  THEN 40
+      WHEN progressive_tax_score > 40 and progressive_tax_score <= 50  THEN 50
+      WHEN progressive_tax_score > 50 and progressive_tax_score <= 60  THEN 60
+      WHEN progressive_tax_score > 60 and progressive_tax_score <= 70  THEN 70
+      WHEN progressive_tax_score > 70 and progressive_tax_score <= 80  THEN 80
+      WHEN progressive_tax_score > 80 and progressive_tax_score <= 90  THEN 90
+      WHEN progressive_tax_score > 90 and progressive_tax_score <= 100  THEN 100
+    ELSE NULL
+    END AS progressive_tax_score_clean
+  
+  , ntl_current.tmc_undocu_rights_support_c4_score AS undocu_rights_support_score
+  , CASE
+      WHEN undocu_rights_support_score >= 0 and undocu_rights_support_score <= 10 THEN 10
+      WHEN undocu_rights_support_score > 10 and undocu_rights_support_score <= 20  THEN 20
+      WHEN undocu_rights_support_score > 20 and undocu_rights_support_score <= 30  THEN 30
+      WHEN undocu_rights_support_score > 30 and undocu_rights_support_score <= 40  THEN 40
+      WHEN undocu_rights_support_score > 40 and undocu_rights_support_score <= 50  THEN 50
+      WHEN undocu_rights_support_score > 50 and undocu_rights_support_score <= 60  THEN 60
+      WHEN undocu_rights_support_score > 60 and undocu_rights_support_score <= 70  THEN 70
+      WHEN undocu_rights_support_score > 70 and undocu_rights_support_score <= 80  THEN 80
+      WHEN undocu_rights_support_score > 80 and undocu_rights_support_score <= 90  THEN 90
+      WHEN undocu_rights_support_score > 90 and undocu_rights_support_score <= 100  THEN 100
+    ELSE NULL
+    END AS undocu_rights_support_score_clean
   
   /*, ntl_current.predictwise_criminal_justice_reform_score
   , ntl_current.predictwise_economic_populism_score
@@ -275,7 +410,7 @@ WHERE latest_voterbase_id_match = 1
 --Final select keeps all original ak_userids from ActionKit, in order to facilitate joining
 
 SELECT
-	ak_userid
+	ak_userid::varchar
   , tmc_person_id
   , tmc_voterbase_id
 
