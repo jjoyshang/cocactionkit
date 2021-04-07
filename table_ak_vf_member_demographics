@@ -314,8 +314,8 @@ SELECT
       WHEN marriage_equality_score > 70 and marriage_equality_score <= 80  THEN 80
       WHEN marriage_equality_score > 80 and marriage_equality_score <= 90  THEN 90
       WHEN marriage_equality_score > 90 and marriage_equality_score <= 100  THEN 100
-    ELSE NULL marriage_equality_score_clean
-    END AS
+    ELSE NULL 
+    END AS marriage_equality_score_clean
   , ntl_current.ts_tsmart_recession_sensitivity_score AS recession_sensitivity_score
   , CASE
       WHEN recession_sensitivity_score >= 0 and recession_sensitivity_score <= 10 THEN 10
