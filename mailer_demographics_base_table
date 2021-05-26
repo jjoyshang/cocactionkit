@@ -143,7 +143,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ROUND(value * 100 / count_all, 2) AS pct
+  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
 FROM (
   SELECT
     mailer_engage.mailing_id
