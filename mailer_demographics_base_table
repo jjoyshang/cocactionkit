@@ -136,7 +136,8 @@ LEFT JOIN actions
   AND rank_unsubs = 1 -- Deduping by user*/
 ) 
 
-
+/* This CTE looks at All members who received a mailer. Per mailer, it groups members into age buckets and calculates
+the percentage of members in each bucket. */
 --, AS age_all (
 SELECT
   temp.mailing_id
@@ -144,7 +145,10 @@ SELECT
   , demographic
   , categories
   , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+    -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
+    -- ^ Formatting to calculate decimal places in the percentage
 FROM (
+  /* This subquery formats the age of members into buckets. */
   SELECT
     mailer_engage.mailing_id
     , 'age' AS demographic
@@ -159,9 +163,12 @@ FROM (
   INNER JOIN coc_reporting.ak_vf_member_demographics AS dems
     ON mailer_engage.user_id = dems.ak_userid
     AND dems.age IS NOT NULL
+       -- ^ Only include members who have an age in the voter file.
   GROUP BY 1,2,3
   ) AS temp
 LEFT JOIN (
+  /* This subquery gets the total number of people for each mailer. This is used in the parents CTE to calculate 
+  percentage. */
   SELECT
     mailing_id
     , COUNT(user_id) AS count_all
@@ -169,6 +176,7 @@ LEFT JOIN (
   INNER JOIN coc_reporting.ak_vf_member_demographics AS dems
     ON mailer_engage.user_id = dems.ak_userid
     AND dems.age IS NOT NULL
+      -- ^ Only include members who have an age in the voter file.
   GROUP BY 1
   ) AS mail_sum
   ON mail_sum.mailing_id = temp.mailing_id
