@@ -255,7 +255,7 @@ SELECT
     ELSE NULL
     END AS working_class_score_clean
 
-  --, ntl_current.predictwise_racial_resentment_score AS racial_resentment_score
+  , ntl_current.predictwise_racial_resentment_score AS racial_resentment_score
   	-- ^The model was built off questions pertaining to black work ethic, historical discrimination, crime, and black protest. The score ranges from 0-100, with 0 meaning an individual is not at all racially resentful, and 100 meaning an individual is extremely racially resentful.
   
   , ntl_current.ts_tsmart_yale_climate_alarmed_score AS climate_alarm_score
@@ -347,6 +347,8 @@ SELECT
   , ntl_current.ts_tsmart_path_to_citizen_score	AS path_to_citizen_score
   , ntl_current.ts_tsmart_climate_change_score AS climate_change_score
   , ntl_current.ts_tsmart_gun_control_score	AS gun_control_score
+  
+    END AS progressive_tax_score_clean
   , ntl_current.ts_tsmart_minimum_wage_score AS minimum_wage_score
   , ntl_current.ts_tsmart_progressive_tax_score AS progressive_tax_score
   , CASE
@@ -377,13 +379,13 @@ SELECT
       WHEN undocu_rights_support_score > 90 and undocu_rights_support_score <= 100  THEN 100
     ELSE NULL
     END AS undocu_rights_support_score_clean
+  , ntl_current.predictwise_healthcare_score AS healthcare_score
   
   /*, ntl_current.predictwise_criminal_justice_reform_score
   , ntl_current.predictwise_economic_populism_score
   , ntl_current.predictwise_environmentalism_score
   , ntl_current.predictwise_guns_score
   , ntl_current.predictwise_healthcare_women_score
-  , ntl_current.predictwise_healthcare_score
   , ntl_current.predictwise_immigrants_score
   , ntl_current.predictwise_income_inequality_score
   , ntl_current.predictwise_military_score
