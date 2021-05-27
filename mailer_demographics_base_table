@@ -1,7 +1,7 @@
 /* */
 
---DROP TABLE IF EXISTS coc_reporting. ;
---CREATE TABLE coc_reporting. AS
+DROP TABLE IF EXISTS coc_reporting.mailer_demographics_xf ;
+CREATE TABLE coc_reporting.mailer_demographics_xf AS
 
 
 /* */
@@ -35,7 +35,8 @@ WITH base AS (
     AND mailing_date > '2020-01-01'
 
 
-ORDER BY mailing_date DESC LIMIT 5000
+--ORDER BY mailing_date DESC LIMIT 50
+--AND core_mailing.id = 50966
  -- ^ temp code to shorten run time while testing
 
 )
@@ -110,7 +111,7 @@ SELECT
 )*/
 
 
-, mailer_engage AS (
+, mailer_summary AS (
 SELECT
   base.*
   --, unsubs.unsubscribe_flag 
@@ -134,101 +135,73 @@ LEFT JOIN actions
   ON base.mailing_id = unsubs.mailing_id
   AND base.user_id = unsubs.user_id
   AND rank_unsubs = 1 -- Deduping by user*/
-) 
+)
 
 
-
-/* This CTE looks at All members who received a mailer. Per mailer, it groups members into age buckets and calculates
-the percentage of members in each bucket. */
-/*, AS age_all (
+/*Final select join to the voterfile via coc_reporting.ak_vf_member_demographics. It brings in demographics desired in
+the final table and formats them into buckets.*/
 SELECT
-  temp.mailing_id
-  , 'All' AS engagement
-  , demographic
-  , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
-    -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
-    -- ^ Formatting to calculate decimal places
-FROM (
-  /* This subquery formats the age of members into buckets. */
-  SELECT
-    mailer_engage.mailing_id
-    , 'age' AS demographic
-    , CASE 
-        WHEN dems.age < 25 THEN '18-24'
-        WHEN dems.age >= 25 AND dems.age < 35 THEN '25-34'
-        WHEN dems.age >= 35 AND dems.age < 50 THEN '35-49'
-        WHEN dems.age >= 50  THEN '50+'
-      END AS categories
-    , COUNT(mailer_engage.user_id) AS value
-  FROM mailer_engage
-  INNER JOIN coc_reporting.ak_vf_member_demographics AS dems
-    ON mailer_engage.user_id = dems.ak_userid
-    AND dems.age IS NOT NULL
-       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
-  ) AS temp
-LEFT JOIN (
-  /* This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
-  percentage of members in each bucket. */
-  SELECT
-    mailing_id
-    , COUNT(user_id) AS count_all
-  FROM mailer_engage
-  INNER JOIN coc_reporting.ak_vf_member_demographics AS dems
-    ON mailer_engage.user_id = dems.ak_userid
-    AND dems.age IS NOT NULL
-      -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1
-  ) AS mail_sum
-  ON mail_sum.mailing_id = temp.mailing_id
-)*/
+  mailer_summary.*
+  , CASE 
+      WHEN dems.age < 25 THEN '18-24'
+      WHEN dems.age >= 25 AND dems.age < 35 THEN '25-34'
+      WHEN dems.age >= 35 AND dems.age < 50 THEN '35-49'
+      WHEN dems.age >= 50  THEN '50+'
+      ELSE NULL
+    END AS age_buckets
+  , CASE WHEN dems.gender = 'Unknown' THEN NULL
+      ELSE dems.gender
+    END AS gender_buckets
+  , dems.vb_state AS state_buckets
+    -- ^ ALready formated in correct buckets.
+  , CASE
+      WHEN household_net_worth = '< $25,000' THEN '< $49k'
+      WHEN household_net_worth = '$25,000 - $49,999' THEN '< $49k'
+      WHEN household_net_worth = '$50,000 - $74,999' THEN '$50 - 99k'
+      WHEN household_net_worth = '$75,000 - $99,999' THEN '$50 - 99k'
+      WHEN household_net_worth = '$100,000 - $149,999' THEN '$100 - 199k'
+      WHEN household_net_worth = '$150,000 - $199,999' THEN '$100 - 199k'
+      WHEN household_net_worth = '$200,000 - $249,999' THEN '$200 - 499k'
+      WHEN household_net_worth = '$250,000 - $499,999' THEN '$200 - 499k'
+      WHEN household_net_worth = '$500,000 - $749,999' THEN '$500 - 999k'
+      WHEN household_net_worth = '$750,000 - $999,999' THEN '$500 - 999k'
+      WHEN household_net_worth = '$1,000,000 - $2,499,999' THEN '> $1m'
+      WHEN household_net_worth = '$2,500,000 - $4,999,999' THEN '> $1m'
+      WHEN household_net_worth = '$5,000,000 - $9,999,999' THEN '> $1m'
+      WHEN household_net_worth = '> $10,000,000' THEN '> $1m'
+      ELSE NULL
+    END AS household_net_worth_buckets
+  , CASE
+      WHEN highest_education = 'Unknown' THEN NULL
+      WHEN highest_education = 'High School' THEN 'High School or less'
+      WHEN highest_education = 'Some College' THEN 'Some College'
+      WHEN highest_education = 'College Graduate'THEN 'College Graduate'
+      WHEN highest_education = 'Post Graduate' THEN 'Post Graduate'
+      WHEN highest_education = 'Less than High School Diploma' THEN 'High School or less'
+      ELSE NULL
+    END AS highest_education_buckets
+  , CASE
+      WHEN family_composition = 'Single' THEN 'Single no children'
+      WHEN family_composition = 'Single with children' THEN 'Has Children'
+      WHEN family_composition = 'Couple' THEN 'Couple no children'
+      WHEN family_composition = 'Couple with children' THEN 'Has children'
+      WHEN family_composition = 'Multiple generations' THEN 'Has children'
+      WHEN family_composition = 'More than 3 surnames' THEN 'Other'
+      WHEN family_composition = 'Other' THEN 'Other'
+      ELSE NULL
+    END AS family_composition_buckets
+  , purely_social_network_score AS facebook_score
+  , personal_voice_social_network_score AS twitter_score
+      -- ^ These two scores will be aggregates in the final table. I cannot calculate them now.
+  -- issue scores here
+FROM mailer_summary
+LEFT JOIN coc_reporting.ak_vf_member_demographics AS dems
+  ON mailer_summary.user_id = dems.ak_userid
+  AND latest_voterbase_id_match = 1
+  
+;
 
 
---, age_opens AS (
-SELECT
-  temp.mailing_id
-  , 'Opens' AS engagement
-  , demographic
-  , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
-    -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
-    -- ^ Formatting to calculate decimal places
-FROM (
-  /* This subquery formats the age of members into buckets. */
-  SELECT
-    mailer_engage.mailing_id
-    , 'age' AS demographic
-    , CASE 
-        WHEN dems.age < 25 THEN '18-24'
-        WHEN dems.age >= 25 AND dems.age < 35 THEN '25-34'
-        WHEN dems.age >= 35 AND dems.age < 50 THEN '35-49'
-        WHEN dems.age >= 50  THEN '50+'
-      END AS categories
-    , COUNT(mailer_engage.user_id) AS value
-  FROM mailer_engage
-  INNER JOIN coc_reporting.ak_vf_member_demographics AS dems
-    ON mailer_engage.user_id = dems.ak_userid
-    AND mailer_engage.open_flag = 1
-      -- ^ Filter for users who were flagged to have opened the mailer
-    AND dems.age IS NOT NULL
-       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
-  ) AS temp
-LEFT JOIN (
-  /* This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
-  percentage of members in each bucket. */
-  SELECT
-    mailing_id
-    , COUNT(user_id) AS count_all
-  FROM mailer_engage
-  INNER JOIN coc_reporting.ak_vf_member_demographics AS dems
-    ON mailer_engage.user_id = dems.ak_userid
-    AND mailer_engage.open_flag = 1
-      -- ^ Filter for users who were flagged to have opened the mailer
-    AND dems.age IS NOT NULL
-      -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1
-  ) AS mail_sum
-  ON mail_sum.mailing_id = temp.mailing_id
---)
+-- Grant access:
+GRANT SELECT ON coc_reporting.mailer_demographics_xf TO GROUP coc;
+GRANT ALL ON coc_reporting.mailer_demographics_xf TO jshang, jharris1;
