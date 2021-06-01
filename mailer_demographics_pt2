@@ -716,7 +716,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100)::decimal(8,2) / 20 AS pct
+  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -731,6 +731,7 @@ FROM (
        -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3
   ) AS temp
+)
 
 
 , facebook_opens AS (
@@ -739,7 +740,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100)::decimal(8,2) / 20 AS pct
+  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -756,6 +757,7 @@ FROM (
          -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3
   ) AS temp
+)
 
 
 , facebook_actions AS (
@@ -764,7 +766,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100)::decimal(8,2) / 20 AS pct
+  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -781,6 +783,7 @@ FROM (
          -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3
   ) AS temp
+)
 
 
 -- TWITTER SCORE --
@@ -790,7 +793,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100)::decimal(8,2) / 20 AS pct
+  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -805,6 +808,7 @@ FROM (
        -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3
   ) AS temp
+)
 
 
 , twitter_opens AS (
@@ -813,7 +817,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100)::decimal(8,2) / 20 AS pct
+  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -830,6 +834,7 @@ FROM (
          -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3
   ) AS temp
+)
 
 
 , twitter_actions AS (
@@ -838,7 +843,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100)::decimal(8,2) / 20 AS pct
+  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -855,6 +860,7 @@ FROM (
          -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3
   ) AS temp
+)
 
 
 -- HEALTHCARE SCORE --
