@@ -193,7 +193,35 @@ SELECT
   , purely_social_network_score AS facebook_score
   , personal_voice_social_network_score AS twitter_score
       -- ^ These two scores will be aggregates in the final table. I cannot calculate them now.
-  -- issue scores here
+  , CASE
+      WHEN healthcare_score >= 0 AND healthcare_score < 25 THEN '0-24'
+      WHEN healthcare_score >= 25 AND healthcare_score < 50 THEN '25-49'
+      WHEN healthcare_score >= 50 AND healthcare_score < 75 THEN '50-74'
+      WHEN healthcare_score >= 75 AND healthcare_score <= 100 THEN '75-100'
+      ELSE NULL
+    END AS healthcare_score_buckets
+  , CASE
+      WHEN progressive_tax_score >= 0 AND progressive_tax_score < 25 THEN '0-24'
+      WHEN progressive_tax_score >= 25 AND progressive_tax_score < 50 THEN '25-49'
+      WHEN progressive_tax_score >= 50 AND progressive_tax_score < 75 THEN '50-74'
+      WHEN progressive_tax_score >= 75 AND progressive_tax_score <= 100 THEN '75-100'
+      ELSE NULL
+    END AS progressive_tax_score_buckets
+  , CASE
+      WHEN racial_resentment_score >= 0 AND racial_resentment_score < 25 THEN '0-24'
+      WHEN racial_resentment_score >= 25 AND racial_resentment_score < 50 THEN '25-49'
+      WHEN racial_resentment_score >= 50 AND racial_resentment_score < 75 THEN '50-74'
+      WHEN racial_resentment_score >= 75 AND racial_resentment_score <= 100 THEN '75-100'
+      ELSE NULL
+    END AS racial_resentment_score_buckets
+  , CASE
+      WHEN gun_control_score >= 0 AND gun_control_score < 25 THEN '0-24'
+      WHEN gun_control_score >= 25 AND gun_control_score < 50 THEN '25-49'
+      WHEN gun_control_score >= 50 AND gun_control_score < 75 THEN '50-74'
+      WHEN gun_control_score >= 75 AND gun_control_score <= 100 THEN '75-100'
+      ELSE NULL
+    END AS gun_control_score_buckets
+    
 FROM mailer_summary
 LEFT JOIN coc_reporting.ak_vf_member_demographics AS dems
   ON mailer_summary.user_id = dems.ak_userid
