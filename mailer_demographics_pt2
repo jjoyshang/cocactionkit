@@ -716,9 +716,8 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
+  , (21 - value) * 100 / 20 AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
-    -- ^ Formatting to calculate decimal places
 FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
@@ -740,16 +739,15 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
+  , (21 - value) * 100 / 20 AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
-    -- ^ Formatting to calculate decimal places
 FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
     , 'facebook_score' AS demographic
     , 'average_likelihood to use' AS categories
-    , AVG(facebook_score::decimal(8,2)) AS value
+    , AVG(facebook_score) AS value  
   FROM coc_reporting.mailer_demographics_xf
   WHERE open_flag = 1
       -- ^ Filter for users who were flagged to have opened the mailer
@@ -766,9 +764,8 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
+  , (21 - value) * 100 / 20 AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
-    -- ^ Formatting to calculate decimal places
 FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
@@ -817,16 +814,15 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
+  , (21 - value) * 100 / 20 AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
-    -- ^ Formatting to calculate decimal places
 FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
     , 'twitter_score' AS demographic
     , 'average_likelihood to use' AS categories
-    , AVG(twitter_score::decimal(8,2)) AS value
+    , AVG(twitter_score) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE open_flag = 1
       -- ^ Filter for users who were flagged to have opened the mailer
@@ -843,16 +839,15 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
+  , (21 - value) * 100 / 20 AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
-    -- ^ Formatting to calculate decimal places
 FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
     , 'twitter_score' AS demographic
     , 'average_likelihood to use' AS categories
-    , AVG(twitter_score::decimal(8,2)) AS value
+    , AVG(twitter_score) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE action_flag = 1
       -- ^ Filter for users who were flagged to have taken action from the mailer
