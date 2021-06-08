@@ -1,7 +1,7 @@
 /* */
 
-DROP TABLE IF EXISTS coc_reporting.mailer_demographics ;
-CREATE TABLE coc_reporting.mailer_demographics AS
+DROP TABLE IF EXISTS coc_reporting.mailer_demographics_xf2 ;
+CREATE TABLE coc_reporting.mailer_demographics_xf2 AS
 
 
 /* This CTE looks at All members who received a mailer. Per mailer, it groups members into age buckets and calculates
@@ -1402,5 +1402,5 @@ SELECT * FROM gun_actions
 
 
 -- Grant access:
-GRANT SELECT ON coc_reporting.mailer_demographics TO GROUP coc;
-GRANT ALL ON coc_reporting.mailer_demographics TO jshang, jharris1;
+GRANT SELECT ON coc_reporting.mailer_demographics_xf2 TO GROUP coc;
+GRANT ALL ON coc_reporting.mailer_demographics_xf2 TO jshang, jharris1;
