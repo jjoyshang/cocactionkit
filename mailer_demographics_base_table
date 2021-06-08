@@ -10,8 +10,8 @@ WITH base AS (
     core_mailing.id AS mailing_id
     , TO_DATE(core_mailing.finished_at, 'YYYY-MM-DD') AS mailing_date 
       -- ^ finished_at has the best coverage of dates for mailers
-    , SUBSTRING(core_tag.name, 6, (LEN(core_tag.name) - 5)) AS campaigner
-      -- ^ format field to remove 'OWNER' from the beginning 
+    , regexp_substr(core_tag.name,'OWNER[1-9]?[1-9]?\\s([^,]+)',1,1,'e')  AS campaigner
+      -- this regular expression accounts for owner name, pulling out the owner label
     , campaigners_2021.team AS campaign_team
     , core_usermailing.user_id
     --, core_user.subscription_status
@@ -26,8 +26,8 @@ WITH base AS (
     --ON core_usermailing.user_id = core_user.id
   LEFT JOIN coc_reporting.campaigners_2021
     ON core_tag.id = campaigners_2021.tag_id
-  WHERE core_tag.name LIKE 'OWNER%' 
-      -- ^ In AK, seeing some campaigners are using the format 'Owner...'. Meaning they will not show up in this table.
+  WHERE core_tag.name iLIKE 'OWNER%' 
+      -- The ilike will enable caps insensitive flags of owners
     AND core_mailing.expected_send_count > 0
     AND core_usermailing.user_id IS NOT NULL 
       -- ^ seeing some mailers that are sent once w/o user id. I'm guessing they're tests
