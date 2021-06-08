@@ -14,7 +14,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ROUND(value::decimal(8,2) * 100 / count_all::decimal(8,2), 2) AS pct
+  , ROUND (value::decimal(10,2) * 100 / count_all::decimal(10,2), 2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -50,7 +50,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , ROUND (value::decimal(10,2) * 100 / count_all::decimal(10,2), 2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -90,7 +90,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , ROUND (value::decimal(10,2) * 100 / count_all::decimal(10,2), 2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -131,7 +131,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -167,7 +167,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -207,7 +207,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -248,7 +248,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -284,7 +284,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -324,7 +324,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -365,7 +365,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -401,7 +401,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -441,7 +441,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -482,7 +482,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -518,7 +518,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -558,7 +558,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -599,7 +599,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -635,7 +635,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -675,7 +675,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this age bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -772,7 +772,7 @@ FROM (
     mailing_id
     , 'facebook_score' AS demographic
     , 'average_likelihood to use' AS categories
-    , AVG(facebook_score::decimal(8,2)) AS value
+    , AVG(facebook_score::decimal(10,2)) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE action_flag = 1
       -- ^ Filter for users who were flagged to have taken action from the mailer
@@ -790,9 +790,8 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , ((21 - value) * 100 / 20)::decimal(8,2) AS pct
+  , (21 - value) * 100 / 20 AS pct
     -- ^ Reformating the average score to be a percentage from 0-100.
-    -- ^ Formatting to calculate decimal places
 FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
@@ -865,7 +864,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -901,7 +900,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -941,7 +940,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -982,7 +981,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1018,7 +1017,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1058,7 +1057,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1099,7 +1098,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1135,7 +1134,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1175,7 +1174,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1216,7 +1215,7 @@ SELECT
   , 'All' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demohgraphic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1252,7 +1251,7 @@ SELECT
   , 'Opens' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
@@ -1292,7 +1291,7 @@ SELECT
   , 'Actions' AS engagement
   , demographic
   , categories
-  , value::decimal(8,2) * 100 / count_all::decimal(8,2) AS pct
+  , value::decimal(10,2) * 100 / count_all::decimal(10,2) AS pct
     -- ^ Calculates the percentage of people per mailer who are in this demographic bracket, rather than the raw number.
     -- ^ Formatting to calculate decimal places
 FROM (
