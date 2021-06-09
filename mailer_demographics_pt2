@@ -1,7 +1,7 @@
 /* */
 
-DROP TABLE IF EXISTS coc_reporting.mailer_demographics_xf2 ;
-CREATE TABLE coc_reporting.mailer_demographics_xf2 AS
+DROP TABLE IF EXISTS coc_reporting.mailer_demographics ;
+CREATE TABLE coc_reporting.mailer_demographics AS
 
 
 /* This CTE looks at All members who received a mailer. Per mailer, it groups members into age buckets and calculates
@@ -11,6 +11,9 @@ the percentage of members in each bucket. */
 WITH age_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -21,13 +24,16 @@ FROM (
   -- This subquery formats the age of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'age' AS demographic
     , age_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE age_buckets IS NOT NULL
        -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -47,6 +53,9 @@ LEFT JOIN (
 , age_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -57,6 +66,9 @@ FROM (
   -- This subquery formats the age of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'age' AS demographic
     , age_buckets AS categories
     , COUNT(user_id) AS value
@@ -65,7 +77,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND age_buckets IS NOT NULL
       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -87,6 +99,9 @@ LEFT JOIN (
 , age_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -97,6 +112,9 @@ FROM (
   -- This subquery formats the age of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'age' AS demographic
     , age_buckets AS categories
     , COUNT(user_id) AS value
@@ -105,7 +123,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND age_buckets IS NOT NULL
       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -128,6 +146,9 @@ LEFT JOIN (
 , gender_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -138,13 +159,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'gender' AS demographic
     , gender_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE gender_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -164,6 +188,9 @@ LEFT JOIN (
 , gender_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -174,6 +201,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'gender' AS demographic
     , gender_buckets AS categories
     , COUNT(user_id) AS value
@@ -182,7 +212,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND gender_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -204,6 +234,9 @@ LEFT JOIN (
 , gender_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -214,6 +247,9 @@ FROM (
   -- This subquery formats the age of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'gender' AS demographic
     , gender_buckets AS categories
     , COUNT(user_id) AS value
@@ -222,7 +258,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND age_buckets IS NOT NULL
       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -245,6 +281,9 @@ LEFT JOIN (
 , state_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -255,13 +294,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'state' AS demographic
     , state_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE state_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -281,6 +323,9 @@ LEFT JOIN (
 , state_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -291,6 +336,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'state' AS demographic
     , state_buckets AS categories
     , COUNT(user_id) AS value
@@ -299,7 +347,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND state_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -321,6 +369,9 @@ LEFT JOIN (
 , state_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -331,6 +382,9 @@ FROM (
   -- This subquery formats the age of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'state' AS demographic
     , state_buckets AS categories
     , COUNT(user_id) AS value
@@ -339,7 +393,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND state_buckets IS NOT NULL
       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -362,6 +416,9 @@ LEFT JOIN (
 , networth_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -372,13 +429,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'household_net_worth' AS demographic
     , household_net_worth_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE household_net_worth_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -398,6 +458,9 @@ LEFT JOIN (
 , networth_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -408,6 +471,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'household_net_worth' AS demographic
     , household_net_worth_buckets AS categories
     , COUNT(user_id) AS value
@@ -416,7 +482,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND household_net_worth_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -438,6 +504,9 @@ LEFT JOIN (
 , networth_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -448,6 +517,9 @@ FROM (
   -- This subquery formats the age of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'household_net_worth' AS demographic
     , household_net_worth_buckets AS categories
     , COUNT(user_id) AS value
@@ -456,7 +528,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND household_net_worth_buckets IS NOT NULL
       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -479,6 +551,9 @@ LEFT JOIN (
 , education_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -489,13 +564,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'highest_education' AS demographic
     , highest_education_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE highest_education_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -515,6 +593,9 @@ LEFT JOIN (
 , education_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -525,6 +606,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'highest_education' AS demographic
     , highest_education_buckets AS categories
     , COUNT(user_id) AS value
@@ -533,7 +617,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND highest_education_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -555,6 +639,9 @@ LEFT JOIN (
 , education_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -565,6 +652,9 @@ FROM (
   -- This subquery formats the age of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'highest_education' AS demographic
     , highest_education_buckets AS categories
     , COUNT(user_id) AS value
@@ -573,7 +663,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND highest_education_buckets IS NOT NULL
       -- ^ Only include members who have an age in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -596,6 +686,9 @@ LEFT JOIN (
 , family_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -606,13 +699,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'family_composition' AS demographic
     , family_composition_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE family_composition_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -632,6 +728,9 @@ LEFT JOIN (
 , family_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -642,6 +741,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'family_composition' AS demographic
     , family_composition_buckets AS categories
     , COUNT(user_id) AS value
@@ -650,7 +752,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND family_composition_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -672,6 +774,9 @@ LEFT JOIN (
 , family_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -682,6 +787,9 @@ FROM (
   -- This subquery formats the demographic into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'family_composition' AS demographic
     , family_composition_buckets AS categories
     , COUNT(user_id) AS value
@@ -690,7 +798,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND family_composition_buckets IS NOT NULL
       -- ^ Only include members who have this demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -713,6 +821,9 @@ LEFT JOIN (
 , facebook_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -722,13 +833,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'facebook_score' AS demographic
     , 'average_likelihood to use' AS categories
     , AVG(facebook_score) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE facebook_score IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 )
 
@@ -736,6 +850,9 @@ FROM (
 , facebook_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -745,6 +862,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'facebook_score' AS demographic
     , 'average_likelihood to use' AS categories
     , AVG(facebook_score) AS value  
@@ -753,7 +873,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND facebook_score IS NOT NULL
          -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 )
 
@@ -761,6 +881,9 @@ FROM (
 , facebook_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -770,6 +893,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'facebook_score' AS demographic
     , 'average_likelihood to use' AS categories
     , AVG(facebook_score::decimal(10,2)) AS value
@@ -778,7 +904,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND facebook_score IS NOT NULL
          -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 )
 
@@ -787,6 +913,9 @@ FROM (
 , twitter_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -796,13 +925,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'twitter_score' AS demographic
     , 'average_likelihood to use' AS categories
     , AVG(twitter_score) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE twitter_score IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 )
 
@@ -810,6 +942,9 @@ FROM (
 , twitter_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -819,6 +954,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'twitter_score' AS demographic
     , 'average_likelihood to use' AS categories
     , AVG(twitter_score) AS value
@@ -827,7 +965,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND twitter_score IS NOT NULL
          -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 )
 
@@ -835,6 +973,9 @@ FROM (
 , twitter_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -844,6 +985,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'twitter_score' AS demographic
     , 'average_likelihood to use' AS categories
     , AVG(twitter_score) AS value
@@ -852,7 +996,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND twitter_score IS NOT NULL
          -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 )
 
@@ -861,6 +1005,9 @@ FROM (
 , healthcare_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -871,13 +1018,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'healthcare_score' AS demographic
     , healthcare_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE healthcare_score_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -897,6 +1047,9 @@ LEFT JOIN (
 , healthcare_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -907,6 +1060,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'healthcare_score' AS demographic
     , healthcare_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -915,7 +1071,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND healthcare_score_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -937,6 +1093,9 @@ LEFT JOIN (
 , healthcare_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -947,6 +1106,9 @@ FROM (
   -- This subquery formats the demographic into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'healthcare_score' AS demographic
     , healthcare_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -955,7 +1117,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND healthcare_score_buckets IS NOT NULL
       -- ^ Only include members who have this demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -978,6 +1140,9 @@ LEFT JOIN (
 , tax_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -988,13 +1153,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'progressive_tax_score' AS demographic
     , progressive_tax_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE progressive_tax_score_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1014,6 +1182,9 @@ LEFT JOIN (
 , tax_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -1024,6 +1195,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'progressive_tax_score' AS demographic
     , progressive_tax_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -1032,7 +1206,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND progressive_tax_score_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1054,6 +1228,9 @@ LEFT JOIN (
 , tax_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -1064,6 +1241,9 @@ FROM (
   -- This subquery formats this demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'progressive_tax_score' AS demographic
     , progressive_tax_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -1072,7 +1252,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND progressive_tax_score_buckets IS NOT NULL
   -- This subquery formats the demographic into buckets.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1095,6 +1275,9 @@ LEFT JOIN (
 , resentment_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -1105,13 +1288,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'racial_resentment_score' AS demographic
     , racial_resentment_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE racial_resentment_score_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1131,6 +1317,9 @@ LEFT JOIN (
 , resentment_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -1141,6 +1330,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'racial_resentment_score' AS demographic
     , racial_resentment_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -1149,7 +1341,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND racial_resentment_score_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1171,6 +1363,9 @@ LEFT JOIN (
 , resentment_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -1181,6 +1376,9 @@ FROM (
   -- This subquery formats the demographic into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'racial_resentment_score' AS demographic
     , racial_resentment_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -1189,7 +1387,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND racial_resentment_score_buckets IS NOT NULL
       -- ^ Only include members who have this demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1212,6 +1410,9 @@ LEFT JOIN (
 , gun_all AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -1222,13 +1423,16 @@ FROM (
   -- This subquery formats the demographic of members into buckets. 
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'gun_control_score' AS demographic
     , gun_control_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE gun_control_score_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1248,6 +1452,9 @@ LEFT JOIN (
 , gun_opens AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Opens' AS engagement
   , demographic
   , categories
@@ -1258,6 +1465,9 @@ FROM (
   -- This subquery formats the demographic of members into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'gun_control_score' AS demographic
     , gun_control_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -1266,7 +1476,7 @@ FROM (
       -- ^ Filter for users who were flagged to have opened the mailer
     AND gun_control_score_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1288,6 +1498,9 @@ LEFT JOIN (
 , gun_actions AS (
 SELECT
   temp.mailing_id
+  , mailing_date
+  , campaigner
+  , campaign_team
   , 'Actions' AS engagement
   , demographic
   , categories
@@ -1298,6 +1511,9 @@ FROM (
   -- This subquery formats the demographic into buckets.
   SELECT
     mailing_id
+    , mailing_date
+    , campaigner
+    , campaign_team
     , 'gun_control_score' AS demographic
     , gun_control_score_buckets AS categories
     , COUNT(user_id) AS value
@@ -1306,7 +1522,7 @@ FROM (
       -- ^ Filter for users who were flagged to have taken action from the mailer
     AND gun_control_score_buckets IS NOT NULL
       -- ^ Only include members who have this demographic in the voter file.
-  GROUP BY 1,2,3
+  GROUP BY 1,2,3,4,5,6
   ) AS temp
 LEFT JOIN (
   -- This subquery gets the total number of people for each mailer. This is used in the parent CTE to calculate 
@@ -1402,5 +1618,5 @@ SELECT * FROM gun_actions
 
 
 -- Grant access:
-GRANT SELECT ON coc_reporting.mailer_demographics_xf2 TO GROUP coc;
-GRANT ALL ON coc_reporting.mailer_demographics_xf2 TO jshang, jharris1;
+GRANT SELECT ON coc_reporting.mailer_demographics TO GROUP coc;
+GRANT ALL ON coc_reporting.mailer_demographics TO jshang, jharris1;
