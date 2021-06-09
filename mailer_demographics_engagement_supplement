@@ -1,0 +1,138 @@
+/* 
+This table is a supplement to a basetable for a dashboard on Mailer Demographics for the Campaigns team. The goal of the basetable 
+is to summarize demographics of our members for every mailer we've sent since 2020. For each mailer, demographics are 
+summarized by engagement type: all recipients, opens, and actions. 
+
+See the full WORKFLOW HERE: https://platform.civisanalytics.com/spa/#/workflows/37375/executions/2623479
+
+The final select takes the mailers (which have been filtered the same way as the basetable) and counts the people in 
+each engagement type: Unsubs, Opens, Clicks, Actions, Unopens. This will be used in the dashboard to give more thorough 
+information on how our members are engaging on mailers, versus the basetable which looks at All, Opens, and Actions.
+*/
+
+
+
+
+DROP TABLE IF EXISTS coc_reporting.mailer_demographics_engage ;
+CREATE TABLE coc_reporting.mailer_demographics_engage AS
+
+
+/* Bring in mailers and users from ActionKit. Filters match the code for the basetable. */
+WITH base AS (
+  SELECT
+    core_mailing.id AS mailing_id
+    , TO_DATE(core_mailing.finished_at, 'YYYY-MM-DD') AS mailing_date 
+      -- ^ finished_at has the best coverage of dates for mailers
+    , core_usermailing.user_id
+  FROM coc_ak.core_mailing
+  LEFT JOIN coc_ak.core_usermailing
+    ON core_mailing.id = core_usermailing.mailing_id
+  WHERE core_mailing.expected_send_count > 0
+    AND core_usermailing.user_id IS NOT NULL 
+      -- ^ seeing some mailers that are sent once w/o user id. I'm guessing they're tests
+    AND core_mailing.status = 'completed'
+    AND mailing_date > '2020-01-01'
+)
+
+
+/* Flag whether a user has opened a mailing. Row number field to dedup in the final select. */
+, opens AS (
+  SELECT
+    base.user_id
+    , base.mailing_id
+    , CASE WHEN core_open.user_id IS NOT NULL THEN 1 ELSE NULL END AS open_flag
+    , ROW_NUMBER () OVER (PARTITION BY core_open.user_id, core_open.mailing_id ORDER BY core_open.created_at DESC) AS rank_opens
+  FROM base
+  INNER JOIN coc_ak.core_open -- Inner join, since I will be joining back to the base in the final select.
+    ON base.mailing_id = core_open.mailing_id
+    AND base.user_id = core_open.user_id
+)
+
+
+/* Flag whether a user has clicked a link from a mailing. Row number field to dedup in the final select. */
+, clicks AS (
+  SELECT
+    base.user_id
+    , base.mailing_id
+    , CASE WHEN core_click.user_id IS NOT NULL THEN 1 ELSE NULL END AS click_flag
+    , ROW_NUMBER () OVER (PARTITION BY core_click.user_id, core_click.mailing_id  ORDER BY core_click.created_at DESC) AS rank_clicks
+  FROM base
+  INNER JOIN coc_ak.core_click -- Inner join, since I will be joining back to the base in the final select.
+    ON base.mailing_id = core_click.mailing_id
+    AND base.user_id = core_click.user_id
+  LEFT JOIN coc_ak.core_clickurl
+    ON core_click.clickurl_id = core_clickurl.id
+  WHERE core_clickurl.url NOT LIKE '%unsubscribe%' -- Exclude clicks that were to unsubscribe
+)
+
+
+/* Flag whether a user took an action from a mailing. The code is based on how AK determined non-unsub actions.
+Row number field to dedup in the final select. */
+, actions AS (
+  SELECT
+    base.user_id
+    , base.mailing_id
+    , CASE WHEN core_action.user_id IS NOT NULL THEN 1 ELSE NULL END AS action_flag
+    , ROW_NUMBER () OVER (PARTITION BY core_action.user_id, core_action.mailing_id  ORDER BY core_action.updated_at DESC) AS rank_actions
+  FROM base
+  INNER JOIN coc_ak.core_action -- Inner join, since I will be joining back to the base in the final select.
+    ON base.mailing_id  = core_action.mailing_id
+    AND base.user_id = core_action.user_id
+  LEFT JOIN coc_ak.core_unsubscribeaction
+    ON core_unsubscribeaction.action_ptr_id = core_action.id
+  WHERE action_ptr_id IS NULL -- Filter out actions that are unsubs.
+    AND core_action.status = 'complete'
+)
+
+
+/* Flag whether a user unsubbed from a mailing, including if the email bounced. 
+The code is based on how AK determined unsubs. Row number field to dedup in the final select. */
+, unsubs AS(
+SELECT
+    base.user_id
+    , base.mailing_id
+    , CASE WHEN base.user_id IS NOT NULL THEN 1 ELSE NULL END AS unsubscribe_flag
+    , ROW_NUMBER () OVER (PARTITION BY core_action.user_id, core_action.mailing_id  ORDER BY core_action.updated_at DESC) AS rank_unsubs
+  FROM base
+  INNER JOIN coc_ak.core_action -- Inner joins, since I will be joining back to the base in the final select.
+    ON base.mailing_id  = core_action.mailing_id
+    AND base.user_id = core_action.user_id
+  INNER JOIN coc_ak.core_unsubscribeaction
+    ON core_unsubscribeaction.action_ptr_id = core_action.id
+  INNER JOIN coc_ak.core_subscriptionhistory
+    ON core_subscriptionhistory.action_id = core_action.id
+)
+
+
+SELECT
+  base.mailing_id
+  , COUNT(unsubs.unsubscribe_flag) AS count_unsubs
+  , COUNT(opens.open_flag) AS count_opens
+  , COUNT(clicks.click_flag) AS count_clicks
+  , COUNT(actions.action_flag) AS count_actions
+  , COUNT(base.user_id) - count_unsubs - count_opens - count_clicks - count_actions AS count_unopens
+FROM base
+LEFT JOIN opens
+  ON base.mailing_id = opens.mailing_id
+  AND base.user_id = opens.user_id
+  AND rank_opens = 1 -- Deduping by user
+LEFT JOIN clicks
+  ON base.mailing_id = clicks.mailing_id
+  AND base.user_id = clicks.user_id
+  AND rank_clicks = 1 -- Deduping by user
+LEFT JOIN actions
+  ON base.mailing_id = actions.mailing_id
+  AND base.user_id = actions.user_id
+  AND rank_actions = 1 -- Deduping by user
+LEFT JOIN unsubs
+  ON base.mailing_id = unsubs.mailing_id
+  AND base.user_id = unsubs.user_id
+  AND rank_unsubs = 1 -- Deduping by user
+GROUP BY 1
+
+;
+
+
+-- Grant access:
+GRANT SELECT ON coc_reporting.mailer_demographics_engage TO GROUP coc;
+GRANT ALL ON coc_reporting.mailer_demographics_engage TO jshang, jharris1;
