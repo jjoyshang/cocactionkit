@@ -1,0 +1,33 @@
+/*
+This table is a supplement to a basetable for a dashboard on Mailer Demographics for the Campaigns team. The goal of the basetable 
+is to summarize demographics of our members for every mailer we've sent since 2020. For each mailer, demographics are 
+summarized by engagement type: all recipients, opens, and actions. 
+
+See the full WORKFLOW HERE: https://platform.civisanalytics.com/spa/#/workflows/37375/executions/2623479
+
+This table takes the mailers from the basetable and brings in its campaign tags. In the dashboard, this will be used as a filter.
+Campaign tags are in a seperate table since one mailer may have multiple campaign tags, which would create duplicates in the 
+base table.
+*/
+
+
+
+DROP TABLE IF EXISTS coc_reporting.mailer_demographics_camp ;
+CREATE TABLE coc_reporting.mailer_demographics_camp AS
+
+SELECT DISTINCT
+  md.mailing_id
+  , core_tag.name AS campaign_tag
+FROM coc_reporting.mailer_demographics AS md
+LEFT JOIN coc_ak.core_mailing_tags
+  ON md.mailing_id = core_mailing_tags.mailing_id
+LEFT JOIN coc_ak.core_tag
+	ON core_mailing_tags.tag_id = core_tag.id
+	AND core_tag.name iLIKE 'CAMP%'
+	  -- ^ Only bring in tags that are campaign tags
+
+;
+
+-- GRANT SELECT --
+GRANT SELECT ON coc_reporting.mailer_demographics_camp TO GROUP coc;
+GRANT ALL ON coc_reporting.mailer_demographics_camp TO jshang, jharris1;
