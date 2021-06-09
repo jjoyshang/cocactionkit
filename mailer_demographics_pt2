@@ -1,4 +1,46 @@
-/* */
+/* 
+This script creates a basetable for a dashboard on Mailer Demographics for the Campaigns team. The goal of the basetable 
+is to summarize demographics of our members for every mailer we've sent since 2020. For each mailer, demographics are 
+summarized by engagement type: all recipients, opens, and actions. 
+
+It builds off an intermediary table (coc_reporting.mailer_demograpics_xf) which filtered which mailers to include, 
+flagged users who opened or took action on a mailer, and formated demographics into buckets.
+
+See the full WORKFLOW HERE: https://platform.civisanalytics.com/spa/#/workflows/37375/executions/2623479
+
+
+This script is composed of a series of CTEs which are almost identical, with one CTE for each demographic and engagement 
+type (all, opens, actions). Each CTE filters for the demographic and engagement type, then calculates the demographic 
+measurement for each bucket as a percent.
+
+The final select brings all of these CTEs together with UNION ALL statements.
+
+Demographics included:
+  Age
+  Gender
+  State
+  Household Net Worth
+  Highest Education
+  Family Composition
+  Facebook Score
+  Twitter Score
+  Healthcare Score
+  Progressive Tax Score
+  Racial Resentment Score
+  Gun Control Score
+
+Table Field names:
+  mailing_id
+  mailing_date
+  campaigner
+  campaign_team
+  demographic
+  categories
+  pct (percent)
+*/
+
+
+
 
 DROP TABLE IF EXISTS coc_reporting.mailer_demographics ;
 CREATE TABLE coc_reporting.mailer_demographics AS
