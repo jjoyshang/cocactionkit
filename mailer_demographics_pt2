@@ -895,7 +895,7 @@ SELECT
   , mailing_date
   , campaigner
   , campaign_team
-  , 'All' AS engagement
+  , 'Opens' AS engagement
   , demographic
   , categories
   , (21 - value) * 100 / 20 AS pct
@@ -926,7 +926,7 @@ SELECT
   , mailing_date
   , campaigner
   , campaign_team
-  , 'All' AS engagement
+  , 'Actions' AS engagement
   , demographic
   , categories
   , (21 - value) * 100 / 20 AS pct
@@ -987,7 +987,7 @@ SELECT
   , mailing_date
   , campaigner
   , campaign_team
-  , 'All' AS engagement
+  , 'Opens' AS engagement
   , demographic
   , categories
   , (21 - value) * 100 / 20 AS pct
@@ -1018,7 +1018,7 @@ SELECT
   , mailing_date
   , campaigner
   , campaign_team
-  , 'All' AS engagement
+  , 'Actions' AS engagement
   , demographic
   , categories
   , (21 - value) * 100 / 20 AS pct
