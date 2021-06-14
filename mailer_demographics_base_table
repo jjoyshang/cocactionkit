@@ -162,7 +162,7 @@ SELECT
     END AS highest_education_buckets
   , CASE
       WHEN family_composition = 'Single' THEN 'Single no children'
-      WHEN family_composition = 'Single with children' THEN 'Has Children'
+      WHEN family_composition = 'Single with children' THEN 'Has children'
       WHEN family_composition = 'Couple' THEN 'Couple no children'
       WHEN family_composition = 'Couple with children' THEN 'Has children'
       WHEN family_composition = 'Multiple generations' THEN 'Has children'
