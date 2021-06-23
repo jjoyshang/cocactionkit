@@ -44,7 +44,7 @@ WITH base AS (
     core_mailing.id AS mailing_id
     , TO_DATE(core_mailing.finished_at, 'YYYY-MM-DD') AS mailing_date 
       -- ^ finished_at has the best coverage of dates for mailers
-    , regexp_substr(core_tag.name,'OWNER[1-9]?[1-9]?\\s([^,]+)',1,1,'e')  AS campaigner
+    , regexp_substr(tags,'OWNER[1-9]?[1-9]?[\\s]?([^,]+)',1,1,'eip') AS campaigner
       -- this regular expression accounts for owner name, pulling out the owner label
     , campaigners_2021.team AS campaign_team
     , core_usermailing.user_id
