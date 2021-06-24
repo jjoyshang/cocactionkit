@@ -110,7 +110,8 @@ SELECT
   , COUNT(opens.open_flag) AS count_opens
   , COUNT(clicks.click_flag) AS count_clicks
   , COUNT(actions.action_flag) AS count_actions
-  , COUNT(base.user_id) - count_unsubs - count_opens - count_clicks - count_actions AS count_unopens
+  , COUNT(base.user_id) - count_opens AS count_unopens
+  , COUNT(base.user_id) AS count_all
 FROM base
 LEFT JOIN opens
   ON base.mailing_id = opens.mailing_id
