@@ -23,10 +23,13 @@ WITH base AS (
     core_mailing.id AS mailing_id
     , TO_DATE(core_mailing.finished_at, 'YYYY-MM-DD') AS mailing_date 
       -- ^ finished_at has the best coverage of dates for mailers
+    , core_mailingsubject.text AS subject_line
     , core_usermailing.user_id
   FROM coc_ak.core_mailing
   LEFT JOIN coc_ak.core_usermailing
     ON core_mailing.id = core_usermailing.mailing_id
+  LEFT JOIN coc_ak.core_mailingsubject
+    ON core_mailing.winning_subject_id = core_mailing_subject.id
   WHERE core_mailing.expected_send_count > 0
     AND core_usermailing.user_id IS NOT NULL 
       -- ^ seeing some mailers that are sent once w/o user id. I'm guessing they're tests
@@ -106,6 +109,7 @@ SELECT
 
 SELECT
   base.mailing_id
+  , base.subject_line
   , COUNT(unsubs.unsubscribe_flag) AS count_unsubs
   , COUNT(opens.open_flag) AS count_opens
   , COUNT(clicks.click_flag) AS count_clicks
@@ -129,7 +133,7 @@ LEFT JOIN unsubs
   ON base.mailing_id = unsubs.mailing_id
   AND base.user_id = unsubs.user_id
   AND rank_unsubs = 1 -- Deduping by user
-GROUP BY 1
+GROUP BY 1,2
 
 ;
 
