@@ -29,7 +29,7 @@ WITH base AS (
   LEFT JOIN coc_ak.core_usermailing
     ON core_mailing.id = core_usermailing.mailing_id
   LEFT JOIN coc_ak.core_mailingsubject
-    ON core_mailing.winning_subject_id = core_mailing_subject.id
+    ON core_mailing.winning_subject_id = core_mailingsubject.id
   WHERE core_mailing.expected_send_count > 0
     AND core_usermailing.user_id IS NOT NULL 
       -- ^ seeing some mailers that are sent once w/o user id. I'm guessing they're tests
