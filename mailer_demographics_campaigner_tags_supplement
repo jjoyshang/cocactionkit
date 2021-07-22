@@ -1,0 +1,38 @@
+/*
+This table is a supplement to a basetable for a dashboard on Mailer Demographics for the Campaigns team. The goal of the basetable 
+is to summarize demographics of our members for every mailer we've sent since 2020. For each mailer, demographics are 
+summarized by engagement type: all recipients, opens, and actions. 
+
+See the full WORKFLOW HERE: https://platform.civisanalytics.com/spa/#/workflows/37375/executions/2623479
+
+This table takes the mailers from the basetable and brings in its campaigner tags and campaign team. In the dashboard, 
+this will be used as a filter.
+Campaigner tags are in a seperate table since one mailer may have multiple campaigner tags, which would create 
+duplicates in the base table.
+*/
+
+
+
+DROP TABLE IF EXISTS coc_reporting.mailer_demographics_campaigners ;
+CREATE TABLE coc_reporting.mailer_demographics_campaigners AS
+
+SELECT DISTINCT
+  md.mailing_id
+    , regexp_substr(core_tag.name,'OWNER[1-9]?[1-9]?[\\s]?([^,]+)',1,1,'eip') AS campaigner
+      -- this regular expression accounts for owner name, pulling out the owner label
+    , campaigners_2021.team AS campaign_team
+FROM coc_reporting.mailer_demographics AS md
+LEFT JOIN coc_ak.core_mailing_tags
+  ON md.mailing_id = core_mailing_tags.mailing_id
+LEFT JOIN coc_ak.core_tag
+	ON core_mailing_tags.tag_id = core_tag.id
+LEFT JOIN coc_reporting.campaigners_2021
+    ON core_tag.id = campaigners_2021.tag_id
+WHERE core_tag.name iLIKE 'OWNER%' 
+      -- The ilike will enable caps insensitive flags of owners
+
+;
+
+-- GRANT SELECT --
+GRANT SELECT ON coc_reporting.mailer_demographics_campaigners TO GROUP coc;
+GRANT ALL ON coc_reporting.mailer_demographics_campaigners TO jshang, jharris1;
