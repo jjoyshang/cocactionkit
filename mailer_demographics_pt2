@@ -54,8 +54,8 @@ WITH age_all AS (
 SELECT
   temp.mailing_id
   , mailing_date
-  , campaigner
-  , campaign_team
+  --, campaigner
+  --, campaign_team
   , 'All' AS engagement
   , demographic
   , categories
@@ -67,8 +67,8 @@ FROM (
   SELECT
     mailing_id
     , mailing_date
-    , campaigner
-    , campaign_team
+    --, campaigner
+    --, campaign_team
     , 'age' AS demographic
     , age_buckets AS categories
     , COUNT(user_id) AS value
