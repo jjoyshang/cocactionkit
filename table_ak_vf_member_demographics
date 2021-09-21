@@ -168,43 +168,31 @@ SELECT
     	END AS urbanicity
     , CASE
     	WHEN ts_tsmart_catholic_raw_score >= ts_tsmart_evangelical_raw_score 
-        	AND ts_tsmart_catholic_raw_score >= ts_tsmart_otherchristian_raw_score
           AND ts_tsmart_catholic_raw_score >= ts_tsmart_jewish_raw_score
           AND ts_tsmart_catholic_raw_score >= ts_tsmart_mormon_raw_score
           AND ts_tsmart_catholic_raw_score >= ts_tsmart_non_religious_raw_score
           THEN 'Catholic'
           ELSE CASE
        WHEN ts_tsmart_evangelical_raw_score >= ts_tsmart_catholic_raw_score
-       		AND ts_tsmart_evangelical_raw_score >= ts_tsmart_otherchristian_raw_score
           AND ts_tsmart_evangelical_raw_score >= ts_tsmart_jewish_raw_score
           AND ts_tsmart_evangelical_raw_score >= ts_tsmart_mormon_raw_score
           AND ts_tsmart_evangelical_raw_score >= ts_tsmart_non_religious_raw_score
           THEN 'Evangelical'
           ELSE CASE
-       WHEN ts_tsmart_otherchristian_raw_score >= ts_tsmart_catholic_raw_score
-       		AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_evangelical_raw_score
-          AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_jewish_raw_score
-          AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_mormon_raw_score
-          AND ts_tsmart_otherchristian_raw_score >= ts_tsmart_non_religious_raw_score
-          THEN 'Other Christian'
-          ELSE CASE
        WHEN ts_tsmart_jewish_raw_score >= ts_tsmart_catholic_raw_score
        		AND ts_tsmart_jewish_raw_score >= ts_tsmart_evangelical_raw_score
-          AND ts_tsmart_jewish_raw_score >= ts_tsmart_otherchristian_raw_score
           AND ts_tsmart_jewish_raw_score >= ts_tsmart_mormon_raw_score
           AND ts_tsmart_jewish_raw_score >= ts_tsmart_non_religious_raw_score
           THEN 'Jewish'
           ELSE CASE
        WHEN ts_tsmart_mormon_raw_score >= ts_tsmart_catholic_raw_score
        		AND ts_tsmart_mormon_raw_score >= ts_tsmart_evangelical_raw_score
-      		AND ts_tsmart_mormon_raw_score >= ts_tsmart_otherchristian_raw_score
        		AND ts_tsmart_mormon_raw_score >= ts_tsmart_jewish_raw_score
       		AND ts_tsmart_mormon_raw_score >= ts_tsmart_non_religious_raw_score
           THEN 'Mormon'
         ELSE CASE
        WHEN ts_tsmart_non_religious_raw_score >= ts_tsmart_catholic_raw_score
       	 	AND ts_tsmart_non_religious_raw_score >= ts_tsmart_evangelical_raw_score
-          AND ts_tsmart_non_religious_raw_score >= ts_tsmart_otherchristian_raw_score
           AND ts_tsmart_non_religious_raw_score >= ts_tsmart_jewish_raw_score
           AND ts_tsmart_non_religious_raw_score >= ts_tsmart_mormon_raw_score
           THEN 'Non-Religious'
@@ -213,12 +201,10 @@ SELECT
         END
         END
         END
-        END
      END AS religion_highest_score
   , CASE
   			WHEN religion_highest_score = 'Catholic' THEN ts_tsmart_catholic_raw_score
         WHEN religion_highest_score = 'Evangelical' THEN ts_tsmart_evangelical_raw_score
-        WHEN religion_highest_score = 'Other Christian' THEN ts_tsmart_otherchristian_raw_score
         WHEN religion_highest_score = 'Non-Christian' THEN ts_tsmart_nonchristian_raw_score
         WHEN religion_highest_score = 'Jewish' THEN ts_tsmart_jewish_raw_score
         WHEN religion_highest_score = 'Mormon' THEN ts_tsmart_mormon_raw_score
@@ -347,8 +333,7 @@ SELECT
   , ntl_current.ts_tsmart_path_to_citizen_score	AS path_to_citizen_score
   , ntl_current.ts_tsmart_climate_change_score AS climate_change_score
   , ntl_current.ts_tsmart_gun_control_score	AS gun_control_score
-  
-    END AS progressive_tax_score_clean
+
   , ntl_current.ts_tsmart_minimum_wage_score AS minimum_wage_score
   , ntl_current.ts_tsmart_progressive_tax_score AS progressive_tax_score
   , CASE
