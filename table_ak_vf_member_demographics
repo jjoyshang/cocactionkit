@@ -205,7 +205,6 @@ SELECT
   , CASE
   			WHEN religion_highest_score = 'Catholic' THEN ts_tsmart_catholic_raw_score
         WHEN religion_highest_score = 'Evangelical' THEN ts_tsmart_evangelical_raw_score
-        WHEN religion_highest_score = 'Non-Christian' THEN ts_tsmart_nonchristian_raw_score
         WHEN religion_highest_score = 'Jewish' THEN ts_tsmart_jewish_raw_score
         WHEN religion_highest_score = 'Mormon' THEN ts_tsmart_mormon_raw_score
         WHEN religion_highest_score = 'Non-Religious' THEN ts_tsmart_non_religious_raw_score
