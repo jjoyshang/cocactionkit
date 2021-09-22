@@ -216,7 +216,6 @@ SELECT
   , ntl_current.ts_tsmart_partisan_score AS partisan_score
   , ntl_current.ts_tsmart_presidential_general_turnout_score AS presidential_general_turnout_score
   , ntl_current.ts_tsmart_midterm_general_turnout_score AS midterm_general_turnout_score
-  , ntl_current.ts_tsmart_presidential_general_enthusiasm_score AS presidential_general_enthusiasm_score
   , ntl_current.ts_tsmart_local_voter_score AS local_voter_score
   , ntl_current.ts_tsmart_activist_score AS activist_score
   , ntl_current.ts_tsmart_trump_defector_score AS trump_defector_score
@@ -239,9 +238,6 @@ SELECT
       WHEN working_class_score > 90 and working_class_score <= 100  THEN 100
     ELSE NULL
     END AS working_class_score_clean
-
-  , ntl_current.predictwise_racial_resentment_score AS racial_resentment_score
-  	-- ^The model was built off questions pertaining to black work ethic, historical discrimination, crime, and black protest. The score ranges from 0-100, with 0 meaning an individual is not at all racially resentful, and 100 meaning an individual is extremely racially resentful.
   
   , ntl_current.ts_tsmart_yale_climate_alarmed_score AS climate_alarm_score
   , CASE
@@ -363,20 +359,8 @@ SELECT
       WHEN undocu_rights_support_score > 90 and undocu_rights_support_score <= 100  THEN 100
     ELSE NULL
     END AS undocu_rights_support_score_clean
-  , ntl_current.predictwise_healthcare_score AS healthcare_score
   
-  /*, ntl_current.predictwise_criminal_justice_reform_score
-  , ntl_current.predictwise_economic_populism_score
-  , ntl_current.predictwise_environmentalism_score
-  , ntl_current.predictwise_guns_score
-  , ntl_current.predictwise_healthcare_women_score
-  , ntl_current.predictwise_immigrants_score
-  , ntl_current.predictwise_income_inequality_score
-  , ntl_current.predictwise_military_score
-  , ntl_current.predictwise_populism_score
-  , ntl_current.predictwise_regulation_score*/
-  
-
+  , ntl_current.tmc_white_antiblack_resentment AS white_antiblack_resentment_score
    , ntl_current.vb_purely_social_networker_demi_decile AS purely_social_network_score
   	-- ^Such as Facebook. 1 represents those most likely and 20 represents those least likely.
   , ntl_current.vb_personal_voice_social_networker_demi_decile AS personal_voice_social_network_score
