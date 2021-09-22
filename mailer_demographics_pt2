@@ -24,9 +24,9 @@ Demographics included:
   Family Composition
   Facebook Score
   Twitter Score
-  Healthcare Score
+  Prochoice Score
   Progressive Tax Score
-  Racial Resentment Score
+  White Anti-Black Racial Resentment Score
   Gun Control Score
 
 Table Field names:
@@ -102,7 +102,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -177,7 +177,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -252,7 +252,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -328,7 +328,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -403,7 +403,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -481,7 +481,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -560,7 +560,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -636,7 +636,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -658,8 +658,8 @@ FROM (
 )
 
 
--- HEALTHCARE SCORE --
-, healthcare_all AS (
+-- PROCHOICE SCORE --
+, prochoice_all AS (
 SELECT
   temp.mailing_id
   , mailing_date
@@ -672,17 +672,17 @@ SELECT
   SELECT
     mailing_id
     , mailing_date
-    , 'healthcare_score' AS demographic
-    , healthcare_score_buckets AS categories
+    , 'prochoice_score' AS demographic
+    , prochoice_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
-  WHERE healthcare_score_buckets IS NOT NULL
+  WHERE prochoice_score_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3,4
   ) AS temp
 )
 
-, healthcare_opens AS (
+, prochoice_opens AS (
 SELECT
   temp.mailing_id
   , mailing_date
@@ -695,23 +695,23 @@ FROM (
   SELECT
     mailing_id
     , mailing_date
-    , 'healthcare_score' AS demographic
-    , healthcare_score_buckets AS categories
+    , 'prochoice_score' AS demographic
+    , prochoice_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE open_flag = 1
       -- ^ Filter for users who were flagged to have opened the mailer
-    AND healthcare_score_buckets IS NOT NULL
+    AND prochoice_score_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3,4
   ) AS temp
 )
 
-, healthcare_actions AS (
+, prochoice_actions AS (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -720,13 +720,13 @@ FROM (
   SELECT
     mailing_id
     , mailing_date
-    , 'healthcare_score' AS demographic
-    , healthcare_score_buckets AS categories
+    , 'prochoice_score' AS demographic
+    , prochoice_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE action_flag = 1
       -- ^ Filter for users who were flagged to have taken action from the mailer
-    AND healthcare_score_buckets IS NOT NULL
+    AND prochoice_score_buckets IS NOT NULL
       -- ^ Only include members who have this demographic in the voter file.
   GROUP BY 1,2,3,4
   ) AS temp
@@ -787,7 +787,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -809,7 +809,7 @@ FROM (
 )
 
 
--- RACIAL RESENTMENT TAX SCORE --
+-- WHITE ANTIBLACK RESENTMENT TAX SCORE --
 , resentment_all AS (
 SELECT
   temp.mailing_id
@@ -823,11 +823,11 @@ FROM (
   SELECT
     mailing_id
     , mailing_date
-    , 'racial_resentment_score' AS demographic
-    , racial_resentment_score_buckets AS categories
+    , 'white_antiblack_resentment_score' AS demographic
+    , white_antiblack_resentment_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
-  WHERE racial_resentment_score_buckets IS NOT NULL
+  WHERE white_antiblack_resentment_score_buckets IS NOT NULL
        -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3,4
   ) AS temp
@@ -846,13 +846,13 @@ FROM (
   SELECT
     mailing_id
     , mailing_date
-    , 'racial_resentment_score' AS demographic
-    , racial_resentment_score_buckets AS categories
+    , 'white_antiblack_resentment_score' AS demographic
+    , white_antiblack_resentment_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE open_flag = 1
       -- ^ Filter for users who were flagged to have opened the mailer
-    AND racial_resentment_score_buckets IS NOT NULL
+    AND white_antiblack_resentment_score_buckets IS NOT NULL
       -- ^ Only include members who have a demographic in the voter file.
   GROUP BY 1,2,3,4
   ) AS temp
@@ -862,7 +862,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -871,13 +871,13 @@ FROM (
   SELECT
     mailing_id
     , mailing_date
-    , 'racial_resentment_score' AS demographic
-    , racial_resentment_score_buckets AS categories
+    , 'white_antiblack_resentment_score' AS demographic
+    , white_antiblack_resentment_score_buckets AS categories
     , COUNT(user_id) AS value
   FROM coc_reporting.mailer_demographics_xf
   WHERE action_flag = 1
       -- ^ Filter for users who were flagged to have taken action from the mailer
-    AND racial_resentment_score_buckets IS NOT NULL
+    AND white_antiblack_resentment_score_buckets IS NOT NULL
       -- ^ Only include members who have this demographic in the voter file.
   GROUP BY 1,2,3,4
   ) AS temp
@@ -936,7 +936,7 @@ FROM (
 SELECT
   temp.mailing_id
   , mailing_date
-  , 'Actions' AS engagement
+  , 'Action Takers' AS engagement
   , demographic
   , categories
   , value AS count_members
@@ -1007,11 +1007,11 @@ SELECT * FROM twitter_opens
 UNION ALL
 SELECT * FROM twitter_actions
 UNION ALL
-SELECT * FROM healthcare_all
+SELECT * FROM prochoice_all
 UNION ALL
-SELECT * FROM healthcare_opens
+SELECT * FROM prochoice_opens
 UNION ALL
-SELECT * FROM healthcare_actions
+SELECT * FROM prochoice_actions
 UNION ALL
 SELECT * FROM tax_all
 UNION ALL
