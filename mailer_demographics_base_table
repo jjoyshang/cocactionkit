@@ -22,12 +22,12 @@ Table Field names:
   state_buckets
   household_net_worth_buckets
   highest_education_buckets
-  family_composition_nuckets
+  family_composition_buckets
   facebook_score
   twitter_score
   prochoice_score_buckets
   progressive_tax_score_buckets
-  white_antiblack_resentment_buckets
+  white_antiblack_resentment_score_buckets
   gun_control_score_buckets
 */
 
@@ -161,7 +161,7 @@ SELECT
       WHEN highest_education = 'Less than High School Diploma' THEN 'High School or less'
       ELSE NULL
     END AS highest_education_buckets
-  , CASE
+  /*, CASE
       WHEN family_composition = 'Single' THEN 'Single no children'
       WHEN family_composition = 'Single with children' THEN 'Has children'
       WHEN family_composition = 'Couple' THEN 'Couple no children'
@@ -170,7 +170,7 @@ SELECT
       WHEN family_composition = 'More than 3 surnames' THEN 'Other'
       WHEN family_composition = 'Other' THEN 'Other'
       ELSE NULL
-    END AS family_composition_buckets
+    END AS family_composition_buckets*/
   , purely_social_network_score AS facebook_score
   , personal_voice_social_network_score AS twitter_score
       -- ^ These two scores will be aggregates in the final table. I cannot calculate them now.
@@ -191,7 +191,7 @@ SELECT
       WHEN white_antiblack_resentment_score >= 34 AND white_antiblack_resentment_score < 67 THEN 'Neutral'
       WHEN white_antiblack_resentment_score >= 67 AND white_antiblack_resentment_score <= 100 THEN 'Unlikely'
       ELSE NULL
-    END AS white_antiblack_resentment_buckets
+    END AS white_antiblack_resentment_score_buckets
   , CASE
       WHEN gun_control_score >= 0 AND gun_control_score < 34 THEN 'Unlikely'
       WHEN gun_control_score >= 34 AND gun_control_score < 67 THEN 'Neutral'
