@@ -424,7 +424,7 @@ FROM (
   ) AS temp
 )
 
-
+/*
 -- FAMILY COMPOSITION --
 , family_all AS (
 SELECT
@@ -501,7 +501,7 @@ FROM (
   GROUP BY 1,2,3,4
   ) AS temp
 )
-
+*/
 
 -- FACEBOOK SCORE --
 , facebook_all AS (
@@ -989,12 +989,12 @@ SELECT * FROM education_opens
 UNION ALL
 SELECT * FROM education_actions
 UNION ALL
-SELECT * FROM family_all
+/*SELECT * FROM family_all
 UNION ALL
 SELECT * FROM family_opens
 UNION ALL
 SELECT * FROM family_actions
-UNION ALL
+UNION ALL*/
 SELECT * FROM facebook_all
 UNION ALL
 SELECT * FROM facebook_opens
