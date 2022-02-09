@@ -1,11 +1,13 @@
 /*This table attributes demographic fields from the voterfile to users in ActionKit.
 
-Note that not all users in ActionKit could be matched to a person in the voterbase. Therefore, each voterfile record is only included for its most recent match to the Activist Pool.
+Note that not all users in ActionKit could be matched to a person in the voterbase. Therefore, each voterfile record is only 
+included for its most recent match to the Activist Pool.
 
 
 I recommend filering this table by subscription status ('ak_sub_status') and 'deceased_flag IS NOT NULL'.
 
-You can query this table by user ids in ActionKit, person ids in the Activist Pool (latest_person_id_match = 1), or voterbase ids (latest_voterbase_id_match = 1). */
+You can query this table by user ids in ActionKit, person ids in the Activist Pool (latest_person_id_match = 1), or 
+voterbase ids (latest_voterbase_id_match = 1). */
 
 
 
@@ -82,7 +84,7 @@ SELECT
   	END AS race
   		-- ^Renaming to be more clear and less technial.
 	, ntl_current.vb_voterbase_marital_status AS marital_status
-  , CASE
+  /*, CASE
       	WHEN ntl_current.vb_family_composition_code = 'A' THEN 'Single'
       	WHEN ntl_current.vb_family_composition_code = 'B' THEN 'Single with children'
       	WHEN ntl_current.vb_family_composition_code = 'C' THEN 'Couple'
@@ -91,15 +93,15 @@ SELECT
        	WHEN ntl_current.vb_family_composition_code = 'F' THEN 'More than 3 surnames'
         WHEN ntl_current.vb_family_composition_code = 'G' THEN 'Other'
        	ELSE ntl_current.vb_family_composition_code 
-    	END AS family_composition
-  , ntl_current.vb_number_of_children_in_household AS number_children
-  , CASE
+    	END AS family_composition*/
+  --, ntl_current.vb_number_of_children_in_household AS number_children
+ /* , CASE
       	WHEN ntl_current.vb_homeowner_indicator = 'Y' THEN 'Yes'
       	WHEN ntl_current.vb_homeowner_indicator = 'N' THEN 'No'
       	WHEN ntl_current.vb_homeowner_indicator = 'U' THEN 'Unknown'
        	ELSE ntl_current.vb_homeowner_indicator 
-    	END AS homeowner_indicator
-  , CASE
+    	END AS homeowner_indicator */
+ /* , CASE
   			WHEN ntl_current.vb_household_income_amount < 25 THEN '< $25,000'::varchar
   			WHEN ntl_current.vb_household_income_amount >= 25 AND ntl_current.vb_household_income_amount < 50 THEN '$25,000 - $49,999'::varchar
   			WHEN ntl_current.vb_household_income_amount >= 50 AND ntl_current.vb_household_income_amount < 75 THEN '$50,000 - $74,999'::varchar
@@ -115,8 +117,8 @@ SELECT
   			WHEN ntl_current.vb_household_income_amount >= 1000 AND ntl_current.vb_household_income_amount < 2500 THEN '$1,000,000 - $2,499,999'::varchar
   			WHEN ntl_current.vb_household_income_amount >= 2500 THEN '> $2,500,000'::varchar
   			ELSE ntl_current.vb_household_income_amount::varchar
-  	END AS household_income_buckets
-  , CASE
+  	END AS household_income_buckets*/
+ /* , CASE
         WHEN household_income_buckets = '< $25,000' THEN '< $25k'
         WHEN household_income_buckets = '$25,000 - $49,999' THEN '$25-49k'
         WHEN household_income_buckets = '$50,000 - $74,999' THEN '$50-74k'
@@ -130,8 +132,8 @@ SELECT
         WHEN household_income_buckets = '$1,000,000 - $2,499,999' THEN '$500k+'
         WHEN household_income_buckets = '> $2,500,000' THEN '$500k+'
         ELSE household_income_buckets
-    END AS household_income_clean
-  , CASE
+    END AS household_income_clean */
+/*  , CASE
       	WHEN ntl_current.vb_household_net_worth = 'A' THEN '< $25,000'
       	WHEN ntl_current.vb_household_net_worth = 'B' THEN '$25,000 - $49,999'
       	WHEN ntl_current.vb_household_net_worth = 'C' THEN '$50,000 - $74,999'
@@ -147,8 +149,8 @@ SELECT
         WHEN ntl_current.vb_household_net_worth = 'M' THEN '$5,000,000 - $9,999,999'
         WHEN ntl_current.vb_household_net_worth = 'N' THEN '> $10,000,000'
        	ELSE ntl_current.vb_household_net_worth
-    	END AS household_net_worth
-  , CASE
+    	END AS household_net_worth */
+ /* , CASE
       	WHEN ntl_current.vb_education = '0' THEN 'Unknown'::varchar
       	WHEN ntl_current.vb_education = '1' THEN 'High School'::varchar
       	WHEN ntl_current.vb_education = '2' THEN 'Some College'::varchar
@@ -156,7 +158,7 @@ SELECT
       	WHEN ntl_current.vb_education = '4' THEN 'Post Graduate'::varchar
         WHEN ntl_current.vb_education = '6' THEN 'Less than High School Diploma'::varchar
        	ELSE ntl_current.vb_education::varchar
-    	END AS highest_education
+    	END AS highest_education */
   , CASE
       	WHEN ntl_current.ts_tsmart_urbanicity = 'R1' THEN '1 Rural (least dense)'
       	WHEN ntl_current.ts_tsmart_urbanicity = 'R2' THEN '2 Rural'
@@ -361,19 +363,20 @@ SELECT
     END AS undocu_rights_support_score_clean
   
   , ntl_current.tmc_white_antiblack_resentment AS white_antiblack_resentment_score
-   , ntl_current.vb_purely_social_networker_demi_decile AS purely_social_network_score
+ /*  , ntl_current.vb_purely_social_networker_demi_decile AS purely_social_network_score
   	-- ^Such as Facebook. 1 represents those most likely and 20 represents those least likely.
   , ntl_current.vb_personal_voice_social_networker_demi_decile AS personal_voice_social_network_score
   	-- ^Such as Twitter. 1 represents those most likely and 20 represents those least likely.
   , ntl_current.vb_professional_social_networker_demi_decile AS professional_social_network_score
-  	-- ^Such as LinkedIn. 1 represents those most likely and 20 represents those least likely.
+  	-- ^Such as LinkedIn. 1 represents those most likely and 20 represents those least likely. */
 
 FROM ak_tmc_join
 LEFT JOIN ts.ntl_current
 	ON ntl_current.vb_voterbase_id = ak_tmc_join.tmc_voterbase_id
 
 WHERE latest_voterbase_id_match = 1
-  -- Filtering to only match to latest matched voterbase_id from the Activist Pool. This is because one voterbase_id may be matched to hundreds of person_ids.
+  /* Filtering to only match to latest matched voterbase_id from the Activist Pool. This is because one 
+  voterbase_id may be matched to hundreds of person_ids. */
 )
 
 
@@ -384,7 +387,8 @@ SELECT
   , tmc_person_id
   , tmc_voterbase_id
 
-/* These fields rank the person_id and voterbase_id matched with an ak_userid, with the most recent match being '1'. This final select includes all ak_userids. But if you wanted to query this table on uique person_ids or voterbase_ids, you could use one of these fields as a filter. */
+/* These fields rank the person_id and voterbase_id matched with an ak_userid, with the most recent match being '1'. 
+This final select includes all ak_userids. But if you wanted to query this table on uique person_ids or voterbase_ids, you could use one of these fields as a filter. */
   , latest_person_id_match
   , latest_voterbase_id_match
   
@@ -394,7 +398,8 @@ SELECT
   , ak_sub_status
   , ak_count_actions
 
-/* For location fields, filtering for fields from the voterbase first in order to keep consistent data source for records that are matching to the voterbase. If the record does not match, the location comes from Action Kit.*/
+/* For location fields, filtering for fields from the voterbase first in order to keep consistent data source for 
+records that are matching to the voterbase. If the record does not match, the location comes from Action Kit.*/
   , NVL(vb_city, ak_city) AS city
   , NVL(vb_state, ak_state) AS state
   , NVL(vb_zip , ak_zip) AS zipcode
